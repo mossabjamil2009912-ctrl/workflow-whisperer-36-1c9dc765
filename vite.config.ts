@@ -24,6 +24,8 @@ export default defineConfig({
         devOptions: { enabled: false },
         workbox: {
           globPatterns: ["**/*.{js,css,woff2,png,svg,ico,webp,jpg}"],
+          // Build output lives under client/, but the site serves it from the root.
+          modifyURLPrefix: { "client/": "/" },
           navigateFallback: null,
           maximumFileSizeToCacheInBytes: 6 * 1024 * 1024,
           runtimeCaching: [
