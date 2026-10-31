@@ -16,6 +16,7 @@ export const Route = createFileRoute("/api/public/bot-catalog")({
         if (error) return new Response(error.message, { status: 500 });
         const prices: Record<string, number> = {};
         const items: Record<string, unknown> = {};
+        const autoRules: Record<string, unknown> = {};
         const files: Record<string, { filename: string | null; caption: string; link: string }> = {};
         // Datasheets live in the repo under /datasheets; give the bot an absolute link on whatever domain serves this app.
         const origin = new URL(request.url).origin;
@@ -25,12 +26,13 @@ export const Route = createFileRoute("/api/public/bot-catalog")({
             if (link) files[r.key.replace(/^pdf:/, "")] = { filename: r.label, caption: "📄 المواصفات الفنية: " + r.name, link };
           } else {
             if (r.price != null) prices[r.key] = Number(r.price);
+            if (Array.isArray(r.auto_rules) && r.auto_rules.length) autoRules[r.key] = r.auto_rules;
             items[r.key] = { name: r.name, unit: r.unit, price: r.price == null ? null : Number(r.price), category: r.category, label: r.label, specs: r.specs };
           }
         }
         const { data: st } = await supabaseAdmin.from("app_settings").select("value").eq("key", "kwh_price").maybeSingle();
         const kwh_price = st ? Number(st.value) : 290;
-        return Response.json({ settings: { kwh_price }, KWH_PRICE: kwh_price, updated_at: new Date().toISOString(), ITEM_PRICES: prices, ITEMS: items, CATALOG_FILES: files });
+        return Response.json({ settings: { kwh_price }, KWH_PRICE: kwh_price, updated_at: new Date().toISOString(), ITEM_PRICES: prices, ITEMS: items, CATALOG_FILES: files, AUTO_RULES: autoRules });
       },
     },
   },
