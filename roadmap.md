@@ -22,4 +22,5 @@
 - [x] Connect n8n in the new workspace
 - [x] Datasheets + full data snapshot (data/) stored inside the project and loaded into the database
 - [x] Connect n8n in the new workspace (linked: سفيان's n8n, gateway, 43 workflows visible)
-- [ ] Desktop/PWA opens fully offline: app shell + HTML served offline, and last-known data (customers, chats, orders, catalog) cached on the device
+- [x] Desktop/PWA opens fully offline: start page cached on first visit, every screen's data copied to the device (verified: offline reload shows the app)
+- [ ] Offline check while logged in (all chats/orders visible with internet off) — needs the dashboard password to sign in for the test
