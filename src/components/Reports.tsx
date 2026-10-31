@@ -120,15 +120,16 @@ export function Reports({ pw }: { pw: string }) {
                       }} className="flex items-center justify-center gap-1 rounded-lg border border-border py-2 text-xs font-semibold disabled:opacity-50">
                         <Eye className="h-4 w-4" />فتح
                       </button>
-                      <button disabled={busy === "d" + r.id} onClick={() => {
-                        if (confirm("حذف هذا الطلب؟")) run("d" + r.id, async () => { await del({ data: { pw, id: r.id } }); await refetch(); });
-                      }} className="flex items-center justify-center gap-1 rounded-lg border border-destructive/40 py-2 text-xs font-semibold text-destructive disabled:opacity-50">
-                        <Trash2 className="h-4 w-4" />حذف
-                      </button>
+                      
                       <button disabled={!ready || busy === r.id} onClick={() => {
                         if (confirm("إرسال التقرير للعميل على واتساب؟")) run(r.id, async () => { await send({ data: { pw, id: r.id } }); await refetch(); });
                       }} className="flex items-center justify-center gap-1 rounded-lg bg-primary py-2 text-xs font-semibold text-primary-foreground disabled:opacity-50">
                         <Send className="h-4 w-4" />إرسال
+                      </button>
+                      <button disabled={busy === "d" + r.id} onClick={() => {
+                        if (confirm("حذف هذا الطلب؟")) run("d" + r.id, async () => { await del({ data: { pw, id: r.id } }); await refetch(); });
+                      }} className="flex items-center justify-center gap-1 rounded-lg border border-destructive/40 py-2 text-xs font-semibold text-destructive disabled:opacity-50">
+                        <Trash2 className="h-4 w-4" />حذف
                       </button>
                     </div>
                   </>
