@@ -3,6 +3,7 @@ import { useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { Check, X, Phone, MapPin } from "lucide-react";
 import { listOrders, decideOrder } from "@/lib/crm.functions";
+import { offlineQuery } from "@/lib/offline-cache";
 
 type St = "pending" | "confirmed" | "cancelled";
 const TABS: { k: St; label: string }[] = [
@@ -13,7 +14,7 @@ const TABS: { k: St; label: string }[] = [
 
 export function useOrders(pw: string) {
   const list = useServerFn(listOrders);
-  return useQuery({ queryKey: ["orders"], queryFn: () => list({ data: { pw } }), refetchInterval: 30000 });
+  return useQuery(offlineQuery({ queryKey: ["orders"], queryFn: () => list({ data: { pw } }), refetchInterval: 30000 }));
 }
 
 export function Orders({ pw }: { pw: string }) {

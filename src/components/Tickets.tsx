@@ -3,6 +3,7 @@ import { useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { Phone, MapPin, Wrench, Image as ImageIcon } from "lucide-react";
 import { listTickets, updateTicket, draftVendorQuery, replyTicket } from "@/lib/crm.functions";
+import { offlineQuery } from "@/lib/offline-cache";
 
 type St = "open" | "in_progress" | "resolved";
 const TABS: { k: St; label: string }[] = [
@@ -13,7 +14,7 @@ const TABS: { k: St; label: string }[] = [
 
 export function useTickets(pw: string) {
   const list = useServerFn(listTickets);
-  return useQuery({ queryKey: ["tickets"], queryFn: () => list({ data: { pw } }), refetchInterval: 30000 });
+  return useQuery(offlineQuery({ queryKey: ["tickets"], queryFn: () => list({ data: { pw } }), refetchInterval: 30000 }));
 }
 
 export function Tickets({ pw }: { pw: string }) {

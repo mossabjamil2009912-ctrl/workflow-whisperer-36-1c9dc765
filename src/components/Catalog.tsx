@@ -3,6 +3,7 @@ import { useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { Search, FileText, Save, Pencil, X, Plus, Trash2, ChevronLeft, Zap } from "lucide-react";
 import { listCatalog, saveCatalogItem, createCatalogItem, deleteCatalogItem } from "@/lib/crm.functions";
+import { offlineQuery } from "@/lib/offline-cache";
 import { AutoRulesDialog } from "@/components/AutoRulesDialog";
 import { rulesOf, type CatItem } from "@/lib/auto-rules";
 
