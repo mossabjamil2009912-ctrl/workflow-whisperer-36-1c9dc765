@@ -58,7 +58,7 @@ export async function buildSld(name: string, spec: SystemSpec, when = new Date()
   doc.setTitle(`${name} - SLD`); doc.setAuthor("ACTES");
   p.drawRectangle({ x: 0, y: 0, width: W, height: H, color: BG });
   const ph = d.three ? "3PH" : "1PH";
-  const lw = 70, lh = (logo.height / logo.width) * lw;
+  const lw = 80, lh = (logo.height / logo.width) * lw;
   p.drawRectangle({ x: W - lw - 22, y: H - lh - 16, width: lw + 12, height: lh + 12, color: WHITE });
   p.drawImage(logo, { x: W - lw - 16, y: H - lh - 10, width: lw, height: lh });
   const date = `${String(when.getDate()).padStart(2, "0")}/${String(when.getMonth() + 1).padStart(2, "0")}/${when.getFullYear()}`;
