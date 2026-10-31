@@ -114,7 +114,7 @@ export async function buildReport(name: string, spec: SystemSpec, site: SiteData
     const p = page(c, 3);
     let y = H - 95;
     box(c, p, "General parameters", y, 120);
-    rows(c, p, M + 8, y - 18, [...orient(0), ["Nb. of sheds", `${s.shedsSouth} units`], ["Sheds spacing", "5.00 m"], ["Sensitive width", "2.38 m"], ["GCR", "48.1 %"]], 150);
+    rows(c, p, M + 8, y - 18, [...orient(0), ["Nb. of sheds", `${az.length === 1 ? s.shedsSouth + s.shedsNorth : s.shedsSouth} units`], ["Sheds spacing", "5.00 m"], ["Sensitive width", "2.38 m"], ["GCR", "48.1 %"]], 150);
     rows(c, p, M + 190, y - 18, [...orient(1), ["Nb. of sheds", az[1] == null ? "-" : `${s.shedsNorth} units`], ["Sheds spacing", "5.00 m"], ["Sensitive width", "2.38 m"], ["GCR", "48.1 %"]], 150);
     rows(c, p, M + 370, y - 18, [["Models used", ""], ["Transposition", "Perez"], ["Diffuse", "Perez, Meteonorm"], ["Horizon", "Free Horizon"], ["Bifaciality factor", "80 %"]], 130);
     txt(p, "User's needs - Monthly values (MWh/mth)", M + 8, y - 88, c.b, 7);

@@ -466,7 +466,7 @@ export const openPresetReport = createServerFn({ method: "POST" })
     return { url: sig.data.signedUrl };
   });
 
-async function requestFile(supabaseAdmin: any, rq: { id: string; name: string | null; file_path: string | null; file_name: string | null; kind: string; system_label: string | null }) {
+async function requestFile(supabaseAdmin: any, rq: { id: string; name: string | null; city?: string | null; lat?: number | null; lon?: number | null; tilt?: number | null; azimuth?: string | null; file_path: string | null; file_name: string | null; kind: string; system_label: string | null }) {
   if (rq.file_path) return { path: rq.file_path, file_name: rq.file_name ?? "report.pdf" };
   if (rq.kind === "pvsyst") {
     // Build the simulation report for this customer's own system and keep it with the request.
@@ -474,8 +474,17 @@ async function requestFile(supabaseAdmin: any, rq: { id: string; name: string | 
     const spec = parseSystem(rq.system_label);
     if (spec) {
       const { buildReport } = await import("@/lib/pvsyst-pdf");
+      const { CITIES, SANAA_SITE } = await import("@/lib/pvsyst-calc");
       const name = (rq.name ?? "").trim() || "Customer";
-      const bin = await buildReport(name, spec);
+      const dir = (["s", "n", "e", "w", "ns", "ew"].includes(rq.azimuth ?? "") ? rq.azimuth : "s") as "s";
+      const city = CITIES[rq.city ?? ""];
+      const loc = rq.lat != null && rq.lon != null ? { name: city?.name ?? "Site", lat: rq.lat, lon: rq.lon } : city ?? CITIES.sanaa!;
+      let site = SANAA_SITE;
+      try {
+        const { fetchSite } = await import("@/lib/pvgis.server");
+        site = await fetchSite({ ...loc, tilt: rq.tilt ?? null, dir });
+      } catch (e) { console.error("PVGIS failed, using Sanaa reference data", e); }
+      const bin = await buildReport(name, spec, site);
       const path = `reports/requests/${rq.id}/${crypto.randomUUID()}.pdf`;
       const file_name = `${name.replace(/[\\/:*?"<>|]/g, "")}_PVsyst.pdf`;
       const up = await supabaseAdmin.storage.from("crm-attachments").upload(path, bin, { contentType: "application/pdf" });
