@@ -35,7 +35,7 @@ import { Catalog } from "@/components/Catalog";
 import { QuoteBuilder } from "@/components/QuoteBuilder";
 import { FilePlus2, FileBarChart } from "lucide-react";
 import { Reports, useReports } from "@/components/Reports";
-import logo from "@/assets/actes-logo.png.asset.json";
+import logo from "@/assets/actes-logo.png";
 import logoClean from "@/assets/actes-logo-clean.png";
 import waBg from "@/assets/actes-wa-bg.png.asset.json";
 
@@ -130,7 +130,7 @@ function Login({ onOk }: { onOk: (p: string) => void }) {
           finally { setBusy(false); }
         }}
       >
-        <div className="flex flex-col items-center gap-1 text-primary"><img src={logo.url} alt="ACTES أكتس" className="h-16 w-auto rounded-xl" /><h1 className="text-xl font-bold">محادثات العملاء</h1></div>
+        <div className="flex flex-col items-center gap-1 text-primary"><img src={logo} alt="ACTES أكتس" className="h-16 w-auto rounded-xl" /><h1 className="text-xl font-bold">محادثات العملاء</h1></div>
         <label className="block text-sm text-muted-foreground">كلمة مرور اللوحة</label>
         <div className="relative">
           <Lock className="absolute right-3 top-2.5 h-4 w-4 text-muted-foreground" />
