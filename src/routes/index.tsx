@@ -494,6 +494,7 @@ function Chat({ pw, c, onBack, onInfo }: { pw: string; c: Cust; onBack: () => vo
   const fileIn = useRef<HTMLInputElement>(null);
   const [sending, setSending] = useState(false);
   const [err, setErr] = useState("");
+  const pending = usePending(c.id);
   const { data: msgs = [], refetch } = useQuery({
     queryKey: ["messages", c.id],
     queryFn: () => get({ data: { pw, id: c.id } }),
@@ -545,6 +546,16 @@ function Chat({ pw, c, onBack, onInfo }: { pw: string; c: Cust; onBack: () => vo
           </div>
           </div>
         ))}
+        {pending.map((p) => (
+          <div key={p.lid} className="flex justify-start">
+            <div className="max-w-[85%] break-words rounded-2xl rounded-tr-sm bg-wa-agent px-2.5 py-1.5 text-wa-text opacity-80 shadow">
+              <WaText text={p.text} />
+              <div className="mt-1 flex items-center justify-end gap-1 text-[10px] text-wa-muted">
+                <Clock className="h-3 w-3" />بانتظار الإنترنت · <span>{fmt(p.at)}</span>
+              </div>
+            </div>
+          </div>
+        ))}
         <div ref={end} />
         </div>
       {file && (
@@ -560,6 +571,8 @@ function Chat({ pw, c, onBack, onInfo }: { pw: string; c: Cust; onBack: () => vo
         onSubmit={async (e) => {
           e.preventDefault();
           const t = text.trim(); if ((!t && !file) || sending) return;
+          if (!file && !navigator.onLine) { enqueue(c.id, t); setText(""); setErr(""); return; }
+          if (file && !navigator.onLine) { setErr("إرسال الملفات يحتاج إنترنت"); return; }
           setSending(true); setErr("");
           try {
             if (file) {
@@ -570,7 +583,10 @@ function Chat({ pw, c, onBack, onInfo }: { pw: string; c: Cust; onBack: () => vo
             } else await send({ data: { pw, id: c.id, text: t } });
             setText(""); await refetch();
           }
-          catch (x) { setErr(x instanceof Error ? x.message : "تعذّر الإرسال"); }
+          catch (x) {
+            if (!file && isNetworkError(x)) { enqueue(c.id, t); setText(""); }
+            else setErr(x instanceof Error ? x.message : "تعذّر الإرسال");
+          }
           finally { setSending(false); }
         }}
       >
