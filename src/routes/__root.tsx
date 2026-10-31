@@ -133,7 +133,13 @@ const persister = createAsyncStoragePersister({
 
 function RootComponent() {
   const { queryClient } = Route.useRouteContext();
-  useEffect(() => { void registerOfflineWorker(); }, []);
+  useEffect(() => {
+    void registerOfflineWorker();
+    void saveShell();
+    const onOnline = () => void saveShell();
+    window.addEventListener("online", onOnline);
+    return () => window.removeEventListener("online", onOnline);
+  }, []);
 
   return (
     <PersistQueryClientProvider client={queryClient} persistOptions={{ persister, maxAge: 30 * 24 * 60 * 60_000, buster: "v1" }}>
