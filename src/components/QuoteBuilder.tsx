@@ -516,7 +516,9 @@ export function QuoteBuilder({ pw, initialCustomerId }: { pw: string; initialCus
       setNo(r.quote_no); setMsg(`تم الحفظ: ${r.quote_no}`); void refetchQ();
     } catch (e) { setMsg((e as Error).message); } finally { setBusy(false); }
   };
-  const loadPreset = (p: Preset) => {
+  // Only the recommended system → load it straight away (no independence step).
+  const showTiers = (t: Tiers | null) => { if (t && !t.low && !t.high) { setTiers(null); loadPreset(t.rec); } else setTiers(t); };
+  function loadPreset(p: Preset) {
     // Like the bot: every linked line takes name, specs, unit and price live from the catalog.
     const out: Line[] = p.lines ? p.lines.map((l) => {
       const k = catalogKeyFor(l), r = k ? items.find((x) => x.key === k) : null;
