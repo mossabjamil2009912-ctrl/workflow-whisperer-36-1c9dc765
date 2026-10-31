@@ -163,25 +163,19 @@ export const optionsForCom = (m: ComMethod, v: number, price = DEFAULT_KWH_PRICE
 // Size order: home systems as listed, then business systems by daily production.
 const SIZE_ORDER: Preset[] = [...RES_LIST, ...[...COM_LIST].sort((a, b) => dailyProduction(a) - dailyProduction(b))];
 export type Tiers = { low?: Preset | undefined; rec: Preset; high?: Preset | undefined };
-// Neighbours are measured from the recommended system only: the next smaller/larger system in the same
-// inverter family (size + phase); if none on that side, the next one in the overall size order.
+// Less/more stay on the SAME inverter (size + phase) as the recommended system; a missing side is simply
+// omitted. Home 1.6 kW and 6.2 kW systems skip the choice entirely (recommended only).
+export const NO_TIER_RES = /^إنفرتر (1\.6|6\.2) /;
 export const tiersFrom = (opts: Preset[]): Tiers | null => {
   if (!opts.length) return null;
   const rec = opts[0]!;
+  if (rec.type !== "com" && NO_TIER_RES.test(rec.group)) return { rec };
   const skip = new Set(opts.map(dailyProduction));
   const r = dailyProduction(rec);
-  if (rec.type === "com") {
-    // Business (bot com_tier_ask): only within the chosen inverter size + phase.
-    const fam = PRESETS.filter((p) => p.group === rec.group && !skip.has(dailyProduction(p))).sort((a, b) => dailyProduction(a) - dailyProduction(b));
-    return { low: [...fam].reverse().find((p) => dailyProduction(p) < r), rec, high: fam.find((p) => dailyProduction(p) > r) };
-  }
-  // Home (bot resTiers): neighbours in the size list, starting from the recommended system.
-  let low: Preset | undefined, high: Preset | undefined;
-  const i0 = SIZE_ORDER.indexOf(rec);
-  if (!low) for (let i = i0 - 1; i >= 0; i--) { const p = SIZE_ORDER[i]!; if (!skip.has(dailyProduction(p)) && dailyProduction(p) < r) { low = p; break; } }
-  if (!high) for (let i = i0 + 1; i < SIZE_ORDER.length; i++) { const p = SIZE_ORDER[i]!; if (!skip.has(dailyProduction(p)) && dailyProduction(p) > r) { high = p; break; } }
-  return { low, rec, high };
+  const fam = PRESETS.filter((p) => p.group === rec.group && (p.type ?? "res") === (rec.type ?? "res") && !skip.has(dailyProduction(p))).sort((a, b) => dailyProduction(a) - dailyProduction(b));
+  return { low: [...fam].reverse().find((p) => dailyProduction(p) < r), rec, high: fam.find((p) => dailyProduction(p) > r) };
 };
+void SIZE_ORDER;
 export const tieredOptions = (path: "res" | "com", m: ComMethod, v: number, price = DEFAULT_KWH_PRICE) =>
   tiersFrom(path === "res" ? optionsForResBill(v, price) : optionsForCom(m, v, price));
 // Bot-style inverter choice for business systems: sizes that cover the need, then single/three phase.
@@ -522,7 +516,9 @@ export function QuoteBuilder({ pw, initialCustomerId }: { pw: string; initialCus
       setNo(r.quote_no); setMsg(`تم الحفظ: ${r.quote_no}`); void refetchQ();
     } catch (e) { setMsg((e as Error).message); } finally { setBusy(false); }
   };
-  const loadPreset = (p: Preset) => {
+  // Only the recommended system → load it straight away (no independence step).
+  const showTiers = (t: Tiers | null) => { if (t && !t.low && !t.high) { setTiers(null); loadPreset(t.rec); } else setTiers(t); };
+  function loadPreset(p: Preset) {
     // Like the bot: every linked line takes name, specs, unit and price live from the catalog.
     const out: Line[] = p.lines ? p.lines.map((l) => {
       const k = catalogKeyFor(l), r = k ? items.find((x) => x.key === k) : null;
@@ -538,7 +534,7 @@ export function QuoteBuilder({ pw, initialCustomerId }: { pw: string; initialCus
     setLines(Object.fromEntries(full.map((l) => [l.key, l])));
     setShowHist(false);
     void generate(full);
-  };
+  }
   const loadQuote = (qt: (typeof quotes)[number]) => {
     // Saved quotes keep their items as they were: auto lines become ordinary lines.
     const its = ((qt.items as unknown as Line[]) ?? []).map((l) => ({ ...l, auto: false }));
@@ -561,7 +557,7 @@ export function QuoteBuilder({ pw, initialCustomerId }: { pw: string; initialCus
               <button key={m} type="button" onClick={() => { setComM(m); setDaily(""); }} className={`rounded-lg border px-2 py-1.5 text-xs font-semibold ${comM === m ? "border-primary bg-primary/10 text-primary" : "bg-card"}`}>{m === "bill" ? "فاتورة" : m === "kwh" ? "استهلاك شهري" : "الديزل"}</button>
             ))}
             {(path === "res" || (path === "com" && comM)) && (
-              <form onSubmit={(e) => { e.preventDefault(); const n = Number(daily); if (!(n > 0)) return; setInvKw(null); const opts = path === "res" ? optionsForResBill(n, kwhPrice) : optionsForCom(comM ?? "bill", n, kwhPrice); const ic = inverterChoices(opts); if (ic.length) { setTiers(null); setInvs(ic); return; } setInvs(null); const t = tiersFrom(opts); if (!t) { setTiers(null); return setMsg("لا توجد منظومة مناسبة — يُحوّل للموظف المختص"); } setTiers(t); }} className="flex items-center gap-1">
+              <form onSubmit={(e) => { e.preventDefault(); const n = Number(daily); if (!(n > 0)) return; setInvKw(null); const opts = path === "res" ? optionsForResBill(n, kwhPrice) : optionsForCom(comM ?? "bill", n, kwhPrice); const ic = inverterChoices(opts); if (ic.length) { setTiers(null); setInvs(ic); return; } setInvs(null); const t = tiersFrom(opts); if (!t) { setTiers(null); return setMsg("لا توجد منظومة مناسبة — يُحوّل للموظف المختص"); } showTiers(t); }} className="flex items-center gap-1">
                 <input autoFocus value={daily} onChange={(e) => setDaily(e.target.value.replace(/[^\d.]/g, ""))} inputMode="decimal" placeholder={path === "res" || comM === "bill" ? "الفاتورة الشهرية (ريال)" : comM === "kwh" ? "الاستهلاك الشهري (كيلووات)" : "الديزل الشهري (لتر)"} className="w-40 rounded-lg border bg-card px-2 py-1.5 text-xs" />
                 <button type="submit" className="rounded-lg bg-primary px-2 py-1.5 text-xs font-bold text-primary-foreground">عرض</button>
               </form>
@@ -582,12 +578,12 @@ export function QuoteBuilder({ pw, initialCustomerId }: { pw: string; initialCus
             {!invKw ? (<>
               <div className="mb-1 text-xs font-bold">اختر قدرة الإنفرتر:</div>
               <div className="flex flex-wrap gap-1">
-                {invs.map((c) => <button key={c.kw} type="button" onClick={() => { const only = c.single && c.three ? null : (c.single ?? c.three)!; if (only) { setInvs(null); setTiers(tiersFrom([only])); } else setInvKw(c); }} className="rounded-lg border bg-card px-3 py-1.5 text-xs font-bold hover:bg-muted">{c.kw} كيلو</button>)}
+                {invs.map((c) => <button key={c.kw} type="button" onClick={() => { const only = c.single && c.three ? null : (c.single ?? c.three)!; if (only) { setInvs(null); showTiers(tiersFrom([only])); } else setInvKw(c); }} className="rounded-lg border bg-card px-3 py-1.5 text-xs font-bold hover:bg-muted">{c.kw} كيلو</button>)}
               </div>
             </>) : (<>
               <div className="mb-1 text-xs font-bold">إنفرتر {invKw.kw} كيلو — سنجل أو ثري فاز؟</div>
               <div className="flex flex-wrap gap-1">
-                {([["single", "سنجل فاز"], ["three", "ثري فاز"]] as const).map(([k, label]) => { const p = invKw[k]; return p ? <button key={k} type="button" onClick={() => { setInvs(null); setInvKw(null); setTiers(tiersFrom([p])); }} className="rounded-lg border bg-card px-3 py-1.5 text-xs font-bold hover:bg-muted">{label}</button> : null; })}
+                {([["single", "سنجل فاز"], ["three", "ثري فاز"]] as const).map(([k, label]) => { const p = invKw[k]; return p ? <button key={k} type="button" onClick={() => { setInvs(null); setInvKw(null); showTiers(tiersFrom([p])); }} className="rounded-lg border bg-card px-3 py-1.5 text-xs font-bold hover:bg-muted">{label}</button> : null; })}
                 {invs.length > 1 && <button type="button" onClick={() => setInvKw(null)} className="rounded-lg bg-muted px-3 py-1.5 text-xs">رجوع</button>}
               </div>
             </>)}
