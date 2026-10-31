@@ -478,7 +478,7 @@ async function requestFile(supabaseAdmin: any, rq: { id: string; name: string | 
       const name = (rq.name ?? "").trim() || "Customer";
       const dir = (["s", "n", "e", "w", "ns", "ew"].includes(rq.azimuth ?? "") ? rq.azimuth : "s") as "s";
       const city = CITIES[rq.city ?? ""];
-      const loc = rq.lat != null && rq.lon != null ? { name: city?.name ?? "Site", lat: rq.lat, lon: rq.lon } : city ?? CITIES.sanaa!;
+      const loc = rq.lat != null && rq.lon != null ? { name: city?.name ?? "Site", lat: rq.lat, lon: rq.lon } : city ?? CITIES["sanaa"]!;
       let site = SANAA_SITE;
       try {
         const { fetchSite } = await import("@/lib/pvgis.server");
