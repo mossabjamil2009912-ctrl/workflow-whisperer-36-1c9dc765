@@ -11,7 +11,7 @@ export const Route = createFileRoute("/api/public/bot-catalog")({
         if (!exp.length || got.length !== exp.length || !timingSafeEqual(got, exp)) {
           return new Response("Unauthorized", { status: 401 });
         }
-        const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+        const { supabaseAdmin } = await import("@/lib/db.server");
         const { data, error } = await supabaseAdmin.from("catalog_items").select("*").eq("active", true).order("sort");
         if (error) return new Response(error.message, { status: 500 });
         const prices: Record<string, number> = {};

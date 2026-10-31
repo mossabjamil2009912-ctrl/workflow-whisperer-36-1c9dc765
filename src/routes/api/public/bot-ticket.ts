@@ -24,7 +24,7 @@ export const Route = createFileRoute("/api/public/bot-ticket")({
         if (!p.success) return new Response(p.error.message, { status: 400 });
         const d = p.data;
         const phone = d.phone.replace(/[^\d]/g, "");
-        const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+        const { supabaseAdmin } = await import("@/lib/db.server");
         const { data: c } = await supabaseAdmin.from("customers").select("id").eq("phone", phone).maybeSingle();
         const { data: t, error } = await supabaseAdmin.from("support_tickets").insert({
           phone, customer_id: c?.id ?? null, name: d.name, city: d.city, device: d.device,
