@@ -28,6 +28,7 @@ function playChime() {
 }
 import { STAGES, type Stage } from "@/lib/crm-data";
 import { listCustomers, getMessages, sendMessage, sendAttachment, saveNote, setBotPaused } from "@/lib/crm.functions";
+import { enqueue, flush, isNetworkError, usePending } from "@/lib/outbox";
 import { Paperclip, X } from "lucide-react";
 import { Orders, useOrders } from "@/components/Orders";
 import { Tickets, useTickets } from "@/components/Tickets";
@@ -172,6 +173,16 @@ function Dashboard({ pw, onLogout }: { pw: string; onLogout: () => void }) {
       }
     })();
   }, [online, customers, qcAll, getAll, pw]);
+  // إرسال الرسائل المعلّقة تلقائياً عند عودة الاتصال
+  const sendQueued = useServerFn(sendMessage);
+  const pendingAll = usePending();
+  useEffect(() => {
+    if (!online || pendingAll.length === 0) return;
+    void flush(async (m) => {
+      await sendQueued({ data: { pw, id: m.id, text: m.text } });
+      void qcAll.invalidateQueries({ queryKey: ["messages", m.id] });
+    });
+  }, [online, pendingAll.length, sendQueued, pw, qcAll]);
   const [q, setQ] = useState("");
   const [filter, setFilter] = useState<Stage | "all">("all");
   const [openId, setOpenId] = useState<string | null>(null);
