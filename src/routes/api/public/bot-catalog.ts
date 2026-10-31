@@ -17,9 +17,12 @@ export const Route = createFileRoute("/api/public/bot-catalog")({
         const prices: Record<string, number> = {};
         const items: Record<string, unknown> = {};
         const files: Record<string, { filename: string | null; caption: string; link: string }> = {};
+        // Datasheets live in the repo under /datasheets; give the bot an absolute link on whatever domain serves this app.
+        const origin = new URL(request.url).origin;
         for (const r of data) {
           if (r.kind === "datasheet") {
-            if (r.pdf_url) files[r.key.replace(/^pdf:/, "")] = { filename: r.label, caption: "📄 المواصفات الفنية: " + r.name, link: r.pdf_url };
+            const link = r.pdf_url?.startsWith("/") ? origin + r.pdf_url : r.pdf_url;
+            if (link) files[r.key.replace(/^pdf:/, "")] = { filename: r.label, caption: "📄 المواصفات الفنية: " + r.name, link };
           } else {
             if (r.price != null) prices[r.key] = Number(r.price);
             items[r.key] = { name: r.name, unit: r.unit, price: r.price == null ? null : Number(r.price), category: r.category, label: r.label, specs: r.specs };
