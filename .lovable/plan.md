@@ -1,20 +1,28 @@
-# Business: always ask inverter size (and phase if both exist) before the three choices
+# إصلاح البوت: طلبات PVsyst/SLD، سؤال حجم الانفرتر، وتكرار الرسائل
 
-## What already works (bot + app)
-- After picking a size (e.g. 80 kW), the three choices come only from that size's systems.
-- If the recommended system is the largest of that size, only "أقل استقلالية" and "موصى به" appear. If it is the smallest, only "موصى به" and "أكثر استقلالية".
-- Single/three phase is asked only when that size has both.
+كل التعديلات داخل البوت الحي في n8n (ACTES WhatsApp Bot v35). أحفظ نسخة احتياطية منه قبل أي تعديل.
 
-## What changes
-- Today, when only one inverter size covers the value (e.g. 6,000 kWh/month → only 20 kW), the bot and app pick it silently and jump to the three choices. From now on the inverter question is always shown, even with one size (one button), so the customer always chooses the inverter first.
-- Same in the app: the inverter size buttons always appear for business values above the home range.
-- Phase question unchanged: asked only when the chosen size has both single and three phase; otherwise chosen automatically.
+## 1. تكرار الرسائل
+ما وجدته: سجل التشغيل يُظهر أن البوت يعمل مرتين في نفس الثانية لكل رسالة (مثلا 12:53:12 ×4، 12:03:15 ×2). يعني أن واتساب يرسل الحدث نفسه مرتين (أو يرسل إشعارات "تم التسليم/القراءة") والبوت يرد على كل واحدة.
+الإصلاح:
+- أفحص بيانات تشغيلين متطابقين لتأكيد السبب بالضبط قبل التعديل.
+- تجاهل أي حدث ليس رسالة فعلية من العميل (إشعارات الحالة).
+- منع معالجة نفس رقم الرسالة مرتين: حفظ آخر رقم رسالة في جلسة العميل وتجاهل المكرر.
+- فحص مسار "رسائل إضافية/كتالوجات" لأي إرسال مزدوج للنص نفسه.
 
-## Steps
-1. Bot: stop auto-picking the inverter when there is one option; show the inverter buttons.
-2. App: always show the inverter size step for business values above the home range.
-3. Test in the bot with 6,000 and 30,000 kWh/month (choose 80) and confirm the buttons match the app.
+## 2. إرسال PVsyst/SLD كطلب للموظفين
+عندما يطلب العميل تقرير PVsyst أو مخطط SLD لنظام جاهز، البوت يسجّل طلبا في لوحة التحكم (شاشة الطلبات) بدلا من إرسال ملف غير مراجَع، ويرد على العميل بأن الفريق سيرسله بعد المراجعة.
 
-## Technical details
-- n8n State Machine: remove the `_opts.length === 1` auto-select in `com_inv_ask` and the matching auto-select before entering `com_inv_ask` (recovery path and `com_value` handler), so the step always renders `invkw_*` buttons.
-- `QuoteBuilder.tsx` form submit: show inverter choices whenever `inverterChoices(opts).length >= 1`.
+## 3. سؤال حجم الانفرتر أولا
+تعديل منطق المحادثة بحيث يسأل البوت دائما عن حجم الانفرتر قبل عرض الأنظمة أو الأسعار.
+
+## التحقق
+- إرسال رسالة تجريبية والتأكد من تشغيل واحد ورد واحد فقط.
+- التأكد من ظهور طلب PVsyst/SLD في لوحة التحكم.
+- مراجعة سجل التشغيل بعد التعديل.
+
+## تفاصيل تقنية
+- إضافة فلتر بعد "Parse Message": تجاهل `statuses` والاحتفاظ بـ `messages` فقط، وdedupe عبر `message.id` المخزن في جدول الجلسة (Load/Upsert Session).
+- إضافة HTTP POST إلى `/api/public/bot-report-request` من State Machine عند نية PVsyst/SLD (بنفس طريقة مصادقة bot-order).
+- تعديل State Machine لإضافة خطوة `ask_inverter_size` قبل عرض الأنظمة.
+- التحديث عبر PUT `/api/v1/workflows/{id}` مع حفظ JSON الأصلي في /tmp للتراجع.
