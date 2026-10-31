@@ -423,7 +423,7 @@ export const listQuotes = createServerFn({ method: "POST" })
   });
 
 // ---------- PVsyst / SLD report requests ----------
-import { sendBlocker, REPORT_LABEL, type ReportKind } from "@/lib/report-rules";
+import { sendBlocker, matchPreset, REPORT_LABEL, type ReportKind } from "@/lib/report-rules";
 const Kind = z.enum(["pvsyst", "sld"]);
 
 export const listReportRequests = createServerFn({ method: "POST" })
@@ -466,15 +466,52 @@ export const openPresetReport = createServerFn({ method: "POST" })
     return { url: sig.data.signedUrl };
   });
 
+async function requestFile(supabaseAdmin: any, rq: { file_path: string | null; file_name: string | null; kind: string; system_label: string | null }) {
+  if (rq.file_path) return { path: rq.file_path, file_name: rq.file_name ?? "report.pdf" };
+  const { data: all } = await supabaseAdmin.from("preset_reports").select("preset_title,path,file_name").eq("kind", rq.kind);
+  const rows = (all ?? []) as { preset_title: string; path: string; file_name: string }[];
+  const t = matchPreset(rq.system_label, rows.map((r) => r.preset_title));
+  const f = rows.find((r) => r.preset_title === t);
+  return f ? { path: f.path, file_name: f.file_name } : null;
+}
+
+export const uploadRequestReport = createServerFn({ method: "POST" })
+  .inputValidator((d) => z.object({ pw: z.string(), id: z.string().uuid(), file_name: z.string().min(1).max(200), b64: z.string().max(23_000_000) }).parse(d))
+  .handler(async ({ data }) => {
+    check(data.pw);
+    const { supabaseAdmin } = await import("@/lib/db.server");
+    const bin = Uint8Array.from(atob(data.b64), (ch) => ch.charCodeAt(0));
+    const path = `reports/requests/${data.id}/${crypto.randomUUID()}.pdf`;
+    const up = await supabaseAdmin.storage.from("crm-attachments").upload(path, bin, { contentType: "application/pdf" });
+    if (up.error) throw new Error("تعذّر رفع الملف");
+    const { error } = await supabaseAdmin.from("report_requests").update({ file_path: path, file_name: data.file_name }).eq("id", data.id);
+    if (error) throw new Error(error.message);
+    return { ok: true };
+  });
+
+export const openRequestReport = createServerFn({ method: "POST" })
+  .inputValidator((d) => z.object({ pw: z.string(), id: z.string().uuid() }).parse(d))
+  .handler(async ({ data }) => {
+    check(data.pw);
+    const { supabaseAdmin } = await import("@/lib/db.server");
+    const { data: rq } = await supabaseAdmin.from("report_requests").select("*").eq("id", data.id).single();
+    if (!rq) throw new Error("الطلب غير موجود");
+    const f = await requestFile(supabaseAdmin, rq);
+    if (!f) throw new Error("لا يوجد تقرير لهذا الطلب");
+    const sig = await supabaseAdmin.storage.from("crm-attachments").createSignedUrl(f.path, 60 * 30);
+    if (sig.error || !sig.data) throw new Error("تعذّر فتح الملف");
+    return { url: sig.data.signedUrl };
+  });
+
 export const sendReportRequest = createServerFn({ method: "POST" })
-  .inputValidator((d) => z.object({ pw: z.string(), id: z.string().uuid(), preset_title: z.string().min(1).max(300) }).parse(d))
+  .inputValidator((d) => z.object({ pw: z.string(), id: z.string().uuid() }).parse(d))
   .handler(async ({ data }) => {
     check(data.pw);
     const { supabaseAdmin } = await import("@/lib/db.server");
     const { data: rq } = await supabaseAdmin.from("report_requests").select("*").eq("id", data.id).single();
     if (!rq) throw new Error("الطلب غير موجود");
     const kind = rq.kind as ReportKind;
-    const { data: f } = await supabaseAdmin.from("preset_reports").select("path,file_name").eq("preset_title", data.preset_title).eq("kind", kind).maybeSingle();
+    const f = await requestFile(supabaseAdmin, rq);
     const block = sendBlocker(rq, f);
     if (block || !f) throw new Error(block ?? "");
     const sig = await supabaseAdmin.storage.from("crm-attachments").createSignedUrl(f.path, 60 * 60 * 24 * 365);
@@ -491,7 +528,7 @@ export const sendReportRequest = createServerFn({ method: "POST" })
       throw new Error(`تعذّر الإرسال (${res.status})`);
     }
     const now = new Date().toISOString();
-    await supabaseAdmin.from("report_requests").update({ status: "sent", sent_at: now, system_label: data.preset_title }).eq("id", data.id);
+    await supabaseAdmin.from("report_requests").update({ status: "sent", sent_at: now }).eq("id", data.id);
     if (rq.customer_id) {
       await supabaseAdmin.from("messages").insert({ customer_id: rq.customer_id, direction: "agent", kind: "pdf", text, media_url: url, mime: "application/pdf", file_name: f.file_name });
       await supabaseAdmin.from("customers").update({ last_message: text, last_at: now }).eq("id", rq.customer_id);
