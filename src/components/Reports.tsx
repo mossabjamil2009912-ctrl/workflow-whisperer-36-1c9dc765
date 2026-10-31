@@ -2,8 +2,9 @@ import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { Eye, Send, Phone, Upload, Check } from "lucide-react";
-import { listReportRequests, uploadPresetReport, openPresetReport, sendReportRequest } from "@/lib/crm.functions";
+import { listReportRequests, uploadPresetReport, openPresetReport, sendReportRequest, uploadRequestReport, openRequestReport } from "@/lib/crm.functions";
 import { BOT_PRESETS } from "@/lib/bot-presets";
+import { matchPreset } from "@/lib/report-rules";
 import { REPORT_LABEL, type ReportKind } from "@/lib/report-rules";
 
 const TITLES = BOT_PRESETS.map((p) => p.title);
@@ -31,7 +32,8 @@ export function Reports({ pw }: { pw: string }) {
   const send = useServerFn(sendReportRequest);
   const upload = useServerFn(uploadPresetReport);
   const [tab, setTab] = useState<"pending" | "sent" | "files">("pending");
-  const [pick, setPick] = useState<Record<string, string>>({});
+  const openReq = useServerFn(openRequestReport);
+  const uploadReq = useServerFn(uploadRequestReport);
   const [busy, setBusy] = useState<string | null>(null);
   const [err, setErr] = useState("");
 
@@ -92,8 +94,8 @@ export function Reports({ pw }: { pw: string }) {
       ) : (
         <ul className="flex-1 space-y-2 overflow-y-auto px-3 pb-3">
           {shown.map((r) => {
-            const sel = pick[r.id] ?? (r.system_label && TITLES.includes(r.system_label) ? r.system_label : "");
-            const ready = !!sel && has(sel, r.kind);
+            const sel = matchPreset(r.system_label, files.filter((f) => f.kind === r.kind).map((f) => f.preset_title));
+            const ready = !!r.file_path || !!sel;
             return (
               <li key={r.id} className="rounded-xl border border-border bg-card p-3 text-sm shadow-sm">
                 <div className="flex items-center justify-between gap-2">
@@ -104,21 +106,28 @@ export function Reports({ pw }: { pw: string }) {
                 {r.system_label && <p className="mt-1 text-xs">المنظومة: {r.system_label}</p>}
                 {r.status === "pending" ? (
                   <>
-                    <select value={sel} onChange={(e) => setPick({ ...pick, [r.id]: e.target.value })}
-                      className="mt-2 w-full rounded-lg border border-border bg-background p-2 text-xs">
-                      <option value="">اختر المنظومة</option>
-                      {TITLES.map((t) => <option key={t} value={t}>{t}</option>)}
-                    </select>
-                    {sel && !ready && <p className="mt-1 text-xs text-destructive">ارفع الملف أولاً من «ملفات المنظومات»</p>}
-                    <div className="mt-2 grid grid-cols-2 gap-2">
-                      <button disabled={!ready} onClick={() => view(sel, r.kind)}
-                        className="flex items-center justify-center gap-1 rounded-lg border border-border py-2 font-semibold disabled:opacity-50">
-                        <Eye className="h-4 w-4" />فتح التقرير
+                    <p className="mt-2 text-xs text-muted-foreground">
+                      {r.file_path ? `نسخة معدّلة: ${r.file_name ?? ""}` : sel ? `التقرير: ${sel}` : ""}
+                    </p>
+                    {!ready && <p className="mt-1 text-xs text-destructive">لا يوجد تقرير جاهز لهذه المنظومة — ارفع تقرير لهذا الطلب</p>}
+                    <div className="mt-2 grid grid-cols-3 gap-2">
+                      <button disabled={!ready} onClick={() => {
+                        const w = window.open("", "_blank");
+                        run("v" + r.id, async () => { const { url } = await openReq({ data: { pw, id: r.id } }); if (w) w.location.href = url; else window.location.href = url; });
+                      }} className="flex items-center justify-center gap-1 rounded-lg border border-border py-2 text-xs font-semibold disabled:opacity-50">
+                        <Eye className="h-4 w-4" />فتح
                       </button>
+                      <label className="flex cursor-pointer items-center justify-center gap-1 rounded-lg border border-border py-2 text-xs font-semibold">
+                        <Upload className="h-4 w-4" />{busy === "u" + r.id ? "..." : ready ? "تعديل" : "رفع"}
+                        <input type="file" accept="application/pdf" className="hidden" onChange={(e) => {
+                          const f = e.target.files?.[0]; e.target.value = "";
+                          if (f) run("u" + r.id, async () => { await uploadReq({ data: { pw, id: r.id, file_name: f.name, b64: await toB64(f) } }); await refetch(); });
+                        }} />
+                      </label>
                       <button disabled={!ready || busy === r.id} onClick={() => {
-                        if (confirm("إرسال التقرير للعميل على واتساب؟")) run(r.id, async () => { await send({ data: { pw, id: r.id, preset_title: sel } }); await refetch(); });
-                      }} className="flex items-center justify-center gap-1 rounded-lg bg-primary py-2 font-semibold text-primary-foreground disabled:opacity-50">
-                        <Send className="h-4 w-4" />إرسال للعميل
+                        if (confirm("إرسال التقرير للعميل على واتساب؟")) run(r.id, async () => { await send({ data: { pw, id: r.id } }); await refetch(); });
+                      }} className="flex items-center justify-center gap-1 rounded-lg bg-primary py-2 text-xs font-semibold text-primary-foreground disabled:opacity-50">
+                        <Send className="h-4 w-4" />إرسال
                       </button>
                     </div>
                   </>
