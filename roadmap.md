@@ -21,3 +21,4 @@
 - [x] Restore catalog into the dashboard (45 items + 30 datasheet PDFs, kWh price 290)
 - [x] Connect n8n in the new workspace
 - [x] Datasheets + full data snapshot (data/) stored inside the project and loaded into the database
+- [x] Add-item form + auto-add rules (app quotes + bot)
