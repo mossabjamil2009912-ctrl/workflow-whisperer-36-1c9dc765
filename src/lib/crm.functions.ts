@@ -466,8 +466,24 @@ export const openPresetReport = createServerFn({ method: "POST" })
     return { url: sig.data.signedUrl };
   });
 
-async function requestFile(supabaseAdmin: any, rq: { file_path: string | null; file_name: string | null; kind: string; system_label: string | null }) {
+async function requestFile(supabaseAdmin: any, rq: { id: string; name: string | null; file_path: string | null; file_name: string | null; kind: string; system_label: string | null }) {
   if (rq.file_path) return { path: rq.file_path, file_name: rq.file_name ?? "report.pdf" };
+  if (rq.kind === "pvsyst") {
+    // Build the simulation report for this customer's own system and keep it with the request.
+    const { parseSystem } = await import("@/lib/pvsyst-calc");
+    const spec = parseSystem(rq.system_label);
+    if (spec) {
+      const { buildReport } = await import("@/lib/pvsyst-pdf");
+      const name = (rq.name ?? "").trim() || "Customer";
+      const bin = await buildReport(name, spec);
+      const path = `reports/requests/${rq.id}/${crypto.randomUUID()}.pdf`;
+      const file_name = `${name.replace(/[\\/:*?"<>|]/g, "")}_PVsyst.pdf`;
+      const up = await supabaseAdmin.storage.from("crm-attachments").upload(path, bin, { contentType: "application/pdf" });
+      if (up.error) throw new Error("تعذّر حفظ التقرير");
+      await supabaseAdmin.from("report_requests").update({ file_path: path, file_name }).eq("id", rq.id);
+      return { path, file_name };
+    }
+  }
   const { data: all } = await supabaseAdmin.from("preset_reports").select("preset_title,path,file_name").eq("kind", rq.kind);
   const rows = (all ?? []) as { preset_title: string; path: string; file_name: string }[];
   const t = matchPreset(rq.system_label, rows.map((r) => r.preset_title));
@@ -533,6 +549,18 @@ export const sendReportRequest = createServerFn({ method: "POST" })
       await supabaseAdmin.from("messages").insert({ customer_id: rq.customer_id, direction: "agent", kind: "pdf", text, media_url: url, mime: "application/pdf", file_name: f.file_name });
       await supabaseAdmin.from("customers").update({ last_message: text, last_at: now }).eq("id", rq.customer_id);
     }
+    return { ok: true };
+  });
+
+export const deleteReportRequest = createServerFn({ method: "POST" })
+  .inputValidator((d) => z.object({ pw: z.string(), id: z.string().uuid() }).parse(d))
+  .handler(async ({ data }) => {
+    check(data.pw);
+    const { supabaseAdmin } = await import("@/lib/db.server");
+    const { data: rq } = await supabaseAdmin.from("report_requests").select("file_path").eq("id", data.id).maybeSingle();
+    if (rq?.file_path) await supabaseAdmin.storage.from("crm-attachments").remove([rq.file_path]);
+    const { error } = await supabaseAdmin.from("report_requests").delete().eq("id", data.id);
+    if (error) throw new Error(error.message);
     return { ok: true };
   });
 

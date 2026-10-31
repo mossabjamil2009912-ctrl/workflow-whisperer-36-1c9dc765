@@ -1,11 +1,12 @@
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
-import { Eye, Send, Phone, Upload, Check } from "lucide-react";
-import { listReportRequests, uploadPresetReport, openPresetReport, sendReportRequest, uploadRequestReport, openRequestReport } from "@/lib/crm.functions";
+import { Eye, Send, Phone, Upload, Check, Trash2 } from "lucide-react";
+import { listReportRequests, uploadPresetReport, openPresetReport, sendReportRequest, deleteReportRequest, openRequestReport } from "@/lib/crm.functions";
 import { offlineQuery } from "@/lib/offline-cache";
 import { BOT_PRESETS } from "@/lib/bot-presets";
 import { matchPreset } from "@/lib/report-rules";
+import { parseSystem } from "@/lib/pvsyst-calc";
 import { REPORT_LABEL, type ReportKind } from "@/lib/report-rules";
 
 const TITLES = BOT_PRESETS.map((p) => p.title);
@@ -34,7 +35,7 @@ export function Reports({ pw }: { pw: string }) {
   const upload = useServerFn(uploadPresetReport);
   const [tab, setTab] = useState<"pending" | "sent" | "files">("pending");
   const openReq = useServerFn(openRequestReport);
-  const uploadReq = useServerFn(uploadRequestReport);
+  const del = useServerFn(deleteReportRequest);
   const [busy, setBusy] = useState<string | null>(null);
   const [err, setErr] = useState("");
 
@@ -96,7 +97,8 @@ export function Reports({ pw }: { pw: string }) {
         <ul className="flex-1 space-y-2 overflow-y-auto px-3 pb-3">
           {shown.map((r) => {
             const sel = matchPreset(r.system_label, files.filter((f) => f.kind === r.kind).map((f) => f.preset_title));
-            const ready = !!r.file_path || !!sel;
+            const auto = r.kind === "pvsyst" && !!parseSystem(r.system_label);
+            const ready = !!r.file_path || !!sel || auto;
             return (
               <li key={r.id} className="rounded-xl border border-border bg-card p-3 text-sm shadow-sm">
                 <div className="flex items-center justify-between gap-2">
@@ -108,9 +110,9 @@ export function Reports({ pw }: { pw: string }) {
                 {r.status === "pending" ? (
                   <>
                     <p className="mt-2 text-xs text-muted-foreground">
-                      {r.file_path ? `نسخة معدّلة: ${r.file_name ?? ""}` : sel ? `التقرير: ${sel}` : ""}
+                      {r.file_path ? `التقرير: ${r.file_name ?? ""}` : auto ? "تقرير جاهز لمنظومة العميل" : sel ? `التقرير: ${sel}` : ""}
                     </p>
-                    {!ready && <p className="mt-1 text-xs text-destructive">لا يوجد تقرير جاهز لهذه المنظومة — ارفع تقرير لهذا الطلب</p>}
+                    {!ready && <p className="mt-1 text-xs text-destructive">لا يوجد مخطط لهذه المنظومة — ارفعه من «ملفات المنظومات»</p>}
                     <div className="mt-2 grid grid-cols-3 gap-2">
                       <button disabled={!ready} onClick={() => {
                         const w = window.open("", "_blank");
@@ -118,13 +120,11 @@ export function Reports({ pw }: { pw: string }) {
                       }} className="flex items-center justify-center gap-1 rounded-lg border border-border py-2 text-xs font-semibold disabled:opacity-50">
                         <Eye className="h-4 w-4" />فتح
                       </button>
-                      <label className="flex cursor-pointer items-center justify-center gap-1 rounded-lg border border-border py-2 text-xs font-semibold">
-                        <Upload className="h-4 w-4" />{busy === "u" + r.id ? "..." : ready ? "تعديل" : "رفع"}
-                        <input type="file" accept="application/pdf" className="hidden" onChange={(e) => {
-                          const f = e.target.files?.[0]; e.target.value = "";
-                          if (f) run("u" + r.id, async () => { await uploadReq({ data: { pw, id: r.id, file_name: f.name, b64: await toB64(f) } }); await refetch(); });
-                        }} />
-                      </label>
+                      <button disabled={busy === "d" + r.id} onClick={() => {
+                        if (confirm("حذف هذا الطلب؟")) run("d" + r.id, async () => { await del({ data: { pw, id: r.id } }); await refetch(); });
+                      }} className="flex items-center justify-center gap-1 rounded-lg border border-destructive/40 py-2 text-xs font-semibold text-destructive disabled:opacity-50">
+                        <Trash2 className="h-4 w-4" />حذف
+                      </button>
                       <button disabled={!ready || busy === r.id} onClick={() => {
                         if (confirm("إرسال التقرير للعميل على واتساب؟")) run(r.id, async () => { await send({ data: { pw, id: r.id } }); await refetch(); });
                       }} className="flex items-center justify-center gap-1 rounded-lg bg-primary py-2 text-xs font-semibold text-primary-foreground disabled:opacity-50">
