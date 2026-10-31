@@ -3,6 +3,7 @@ import { PDFDocument, StandardFonts, rgb, type PDFFont, type PDFPage, type PDFIm
 import fontkit from "@pdf-lib/fontkit";
 import { FONT_B64 } from "@/lib/report-assets/font";
 import { LOGO_B64 } from "@/lib/report-assets/logo";
+import { shapeArabic } from "@/lib/arabic-shape";
 import { SITE, REF, MONTHS, LOSSES, PANEL_W, simulate, type SystemSpec, type Sim } from "@/lib/pvsyst-calc";
 
 const W = 595, H = 842, M = 40;
@@ -59,7 +60,7 @@ export async function buildReport(name: string, spec: SystemSpec, when = new Dat
   doc.registerFontkit(fontkit);
   const date = `${String(when.getDate()).padStart(2, "0")}/${String(when.getMonth() + 1).padStart(2, "0")}/${String(when.getFullYear()).slice(2)} ${String(when.getHours()).padStart(2, "0")}:${String(when.getMinutes()).padStart(2, "0")}`;
   const c: Ctx = {
-    doc, name, date, total: 6,
+    doc, name: shapeArabic(name), date, total: 6,
     f: await doc.embedFont(StandardFonts.Helvetica), b: await doc.embedFont(StandardFonts.HelveticaBold),
     u: await doc.embedFont(b64(FONT_B64), { subset: true }), logo: await doc.embedPng(b64(LOGO_B64)),
     variant: `Hybrid System ${Math.round(s.kwp)} KWp`,
@@ -74,7 +75,7 @@ export async function buildReport(name: string, spec: SystemSpec, when = new Dat
     txt(p, "ACTES Simulation", W - 95, H - 64, c.f, 8, INK, "c");
     txt(p, "Simulation report", W / 2, H - 250, c.f, 22, INK, "c");
     txt(p, "Grid-Connected System", W / 2, H - 280, c.f, 14, INK, "c");
-    txt(p, `Project: ${name}`, W / 2, H - 315, c.u, 13, INK, "c");
+    txt(p, `Project: ${c.name}`, W / 2, H - 315, c.u, 13, INK, "c");
     txt(p, `Variant: ${c.variant}`, W / 2, H - 335, c.f, 11, INK, "c");
     const lw = 220, lh = (c.logo.height / c.logo.width) * lw;
     p.drawImage(c.logo, { x: W / 2 - lw / 2, y: 280 - lh / 2, width: lw, height: lh });
