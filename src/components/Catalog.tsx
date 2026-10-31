@@ -2,7 +2,7 @@ import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { Search, FileText, Save, Pencil, X, Plus, Trash2, ChevronLeft, Zap } from "lucide-react";
-import { listCatalog, saveCatalogItem, createCatalogItem } from "@/lib/crm.functions";
+import { listCatalog, saveCatalogItem, createCatalogItem, deleteCatalogItem } from "@/lib/crm.functions";
 import { AutoRulesDialog } from "@/components/AutoRulesDialog";
 import { rulesOf, type CatItem } from "@/lib/auto-rules";
 
@@ -59,7 +59,12 @@ function Folder({ title, count, open, onToggle, level, children }: { title: stri
 
 export function Catalog({ pw }: { pw: string }) {
   const list = useServerFn(listCatalog);
+  const del = useServerFn(deleteCatalogItem);
   const { data: rows = [], refetch } = useQuery({ queryKey: ["catalog"], queryFn: () => list({ data: { pw } }) });
+  const onDelete = async (r: Row) => {
+    if (!window.confirm(`حذف "${r.name}" نهائياً؟`)) return;
+    try { await del({ data: { pw, key: r.key } }); await refetch(); } catch (e) { alert((e as Error).message); }
+  };
   const [tab, setTab] = useState<"item" | "datasheet">("item");
   const [q, setQ] = useState("");
   const [editing, setEditing] = useState<Row | null>(null);
@@ -98,6 +103,9 @@ export function Catalog({ pw }: { pw: string }) {
         )}
         <button onClick={() => setEditing(r)} className={`${r.kind === "item" ? "" : "mr-auto "}flex items-center gap-1 rounded-md bg-primary px-3 py-1 text-xs text-primary-foreground`}>
           <Pencil className="h-3.5 w-3.5" /> تعديل
+        </button>
+        <button onClick={() => onDelete(r)} className="flex items-center gap-1 rounded-md border border-destructive px-2 py-1 text-xs text-destructive">
+          <Trash2 className="h-3.5 w-3.5" /> حذف
         </button>
       </div>
     </div>
