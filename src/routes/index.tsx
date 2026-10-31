@@ -173,16 +173,16 @@ function Dashboard({ pw, onLogout }: { pw: string; onLogout: () => void }) {
     synced.current = true;
     (async () => {
       const screens = [
-        offlineQuery({ queryKey: ["catalog"], queryFn: () => listCat({ data: { pw } }) }),
-        offlineQuery({ queryKey: ["orders"], queryFn: () => listOrd({ data: { pw } }) }),
-        offlineQuery({ queryKey: ["tickets"], queryFn: () => listTic({ data: { pw } }) }),
-        offlineQuery({ queryKey: ["reports"], queryFn: () => listRep({ data: { pw } }) }),
-        offlineQuery({ queryKey: ["quotes"], queryFn: () => listQ({ data: { pw } }) }),
-        offlineQuery({ queryKey: ["kwh_price"], queryFn: () => getKwh({ data: { pw } }) }),
+        async () => { await qcAll.prefetchQuery(offlineQuery({ queryKey: ["catalog"], queryFn: () => listCat({ data: { pw } }) })); },
+        async () => { await qcAll.prefetchQuery(offlineQuery({ queryKey: ["orders"], queryFn: () => listOrd({ data: { pw } }) })); },
+        async () => { await qcAll.prefetchQuery(offlineQuery({ queryKey: ["tickets"], queryFn: () => listTic({ data: { pw } }) })); },
+        async () => { await qcAll.prefetchQuery(offlineQuery({ queryKey: ["reports"], queryFn: () => listRep({ data: { pw } }) })); },
+        async () => { await qcAll.prefetchQuery(offlineQuery({ queryKey: ["quotes"], queryFn: () => listQ({ data: { pw } }) })); },
+        async () => { await qcAll.prefetchQuery(offlineQuery({ queryKey: ["kwh_price"], queryFn: () => getKwh({ data: { pw } }) })); },
       ];
-      for (const q of screens) {
+      for (const s of screens) {
         if (!navigator.onLine) break;
-        await qcAll.prefetchQuery(q).catch(() => {});
+        await s().catch(() => {});
       }
       for (const c of customers) {
         if (!navigator.onLine) break;
