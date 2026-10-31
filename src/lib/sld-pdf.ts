@@ -24,7 +24,7 @@ function t(c: C, s: string, x: number, y: number, size = 7, color: RGB = WHITE, 
   c.p.drawText(s, { x: align === "c" ? x - w / 2 : align === "r" ? x - w : x, y: Y(y), size, font, color });
 }
 function line(c: C, x1: number, y1: number, x2: number, y2: number, color: RGB, th = 1.2, dash?: number[]) {
-  c.p.drawLine({ start: { x: x1, y: Y(y1) }, end: { x: x2, y: Y(y2) }, thickness: th, color, dashArray: dash });
+  c.p.drawLine({ start: { x: x1, y: Y(y1) }, end: { x: x2, y: Y(y2) }, thickness: th, color, ...(dash ? { dashArray: dash } : {}) });
 }
 function dot(c: C, x: number, y: number, color: RGB, r = 2) { c.p.drawCircle({ x, y: Y(y), size: r, color }); }
 function box(c: C, x: number, y: number, w: number, h: number, title: string, lines: string[], color: RGB) {
