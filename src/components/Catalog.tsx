@@ -1,8 +1,10 @@
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
-import { Search, FileText, Save, Pencil, X, Plus, Trash2, ChevronLeft } from "lucide-react";
-import { listCatalog, saveCatalogItem } from "@/lib/crm.functions";
+import { Search, FileText, Save, Pencil, X, Plus, Trash2, ChevronLeft, Zap } from "lucide-react";
+import { listCatalog, saveCatalogItem, createCatalogItem } from "@/lib/crm.functions";
+import { AutoRulesDialog } from "@/components/AutoRulesDialog";
+import { rulesOf, type CatItem } from "@/lib/auto-rules";
 
 type Row = Awaited<ReturnType<typeof listCatalog>>[number];
 
@@ -61,6 +63,9 @@ export function Catalog({ pw }: { pw: string }) {
   const [tab, setTab] = useState<"item" | "datasheet">("item");
   const [q, setQ] = useState("");
   const [editing, setEditing] = useState<Row | null>(null);
+  const [adding, setAdding] = useState(false);
+  const [ruleKey, setRuleKey] = useState<string | null>(null);
+  const ruleItem = ruleKey ? rows.find((r) => r.key === ruleKey) : null;
   const [openSet, setOpenSet] = useState<Set<string>>(new Set());
   const shown = rows.filter((r) => r.kind === tab && (r.name.includes(q) || r.key.includes(q)));
   const isOpen = (id: string) => !!q || openSet.has(id);
@@ -86,7 +91,12 @@ export function Catalog({ pw }: { pw: string }) {
         {r.kind === "item" && <span className="text-muted-foreground">${r.price ?? "-"} / {r.unit}</span>}
         {r.kind === "datasheet" && r.pdf_url && <a href={r.pdf_url} target="_blank" rel="noreferrer" className="flex items-center gap-1 text-xs text-primary"><FileText className="h-3.5 w-3.5" /> فتح</a>}
         {!r.active && <span className="text-xs text-muted-foreground">(موقوف)</span>}
-        <button onClick={() => setEditing(r)} className="mr-auto flex items-center gap-1 rounded-md bg-primary px-3 py-1 text-xs text-primary-foreground">
+        {r.kind === "item" && (
+          <button onClick={() => setRuleKey(r.key)} className={`mr-auto flex items-center gap-1 rounded-md border px-2 py-1 text-xs ${rulesOf(r).length ? "border-primary text-primary" : "text-muted-foreground"}`}>
+            <Zap className="h-3.5 w-3.5" /> {rulesOf(r).length ? "تلقائي" : "القاعدة"}
+          </button>
+        )}
+        <button onClick={() => setEditing(r)} className={`${r.kind === "item" ? "" : "mr-auto "}flex items-center gap-1 rounded-md bg-primary px-3 py-1 text-xs text-primary-foreground`}>
           <Pencil className="h-3.5 w-3.5" /> تعديل
         </button>
       </div>
@@ -100,6 +110,11 @@ export function Catalog({ pw }: { pw: string }) {
           <button onClick={() => setTab("item")} className={`rounded-lg py-2 text-sm ${tab === "item" ? "bg-primary font-semibold text-primary-foreground" : "bg-muted"}`}>الأصناف والأسعار</button>
           <button onClick={() => setTab("datasheet")} className={`rounded-lg py-2 text-sm ${tab === "datasheet" ? "bg-primary font-semibold text-primary-foreground" : "bg-muted"}`}>الكتالوجات PDF</button>
         </div>
+        {tab === "item" && (
+          <button onClick={() => setAdding(true)} className="flex w-full items-center justify-center gap-1 rounded-lg border-2 border-dashed border-primary py-2 text-sm font-semibold text-primary">
+            <Plus className="h-4 w-4" /> إضافة صنف
+          </button>
+        )}
         <div className="relative">
           <Search className="absolute right-3 top-2.5 h-4 w-4 text-muted-foreground" />
           <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="بحث عن صنف..." className="w-full rounded-lg border bg-card py-2 pl-3 pr-9 text-sm" />
@@ -130,6 +145,8 @@ export function Catalog({ pw }: { pw: string }) {
         {tab === "item" && !shown.length && <p className="py-10 text-center text-sm text-muted-foreground">لا توجد أصناف</p>}
       </div>
       {editing && <EditCard key={editing.key} r={editing} pw={pw} onClose={() => setEditing(null)} onSaved={() => { refetch(); setEditing(null); }} />}
+      {adding && <NewItemCard rows={rows} pw={pw} onClose={() => setAdding(false)} onSaved={async (key) => { setAdding(false); await refetch(); setRuleKey(key); }} />}
+      {ruleItem && <AutoRulesDialog key={ruleItem.key} item={ruleItem as CatItem} items={rows as CatItem[]} pw={pw} onClose={() => setRuleKey(null)} onSaved={() => { refetch(); setRuleKey(null); }} />}
     </div>
   );
 }
