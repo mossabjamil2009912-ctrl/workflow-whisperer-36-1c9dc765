@@ -23,7 +23,7 @@ export const Route = createFileRoute("/api/public/bot-order")({
         if (!p.success) return new Response(p.error.message, { status: 400 });
         const d = p.data;
         const phone = d.phone.replace(/[^\d]/g, "");
-        const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+        const { supabaseAdmin } = await import("@/lib/db.server");
         const { data: c } = await supabaseAdmin.from("customers").select("id").eq("phone", phone).maybeSingle();
         const { error } = await supabaseAdmin.from("orders").insert({
           phone, customer_id: c?.id ?? null, name: d.name, city: d.city,

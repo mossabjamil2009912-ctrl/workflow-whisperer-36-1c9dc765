@@ -24,7 +24,7 @@ export const Route = createFileRoute("/api/public/bot-order-status")({
         if (!p.success) return new Response(p.error.message, { status: 400 });
         const digits = p.data.phone.replace(/\D/g, "");
         const tail = digits.slice(-9);
-        const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+        const { supabaseAdmin } = await import("@/lib/db.server");
         const { data: rows, error } = await supabaseAdmin
           .from("orders").select("id,status,phone").like("phone", `%${tail}`)
           .order("created_at", { ascending: false }).limit(1);

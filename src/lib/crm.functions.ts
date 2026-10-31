@@ -10,7 +10,7 @@ export const listCustomers = createServerFn({ method: "POST" })
   .inputValidator((d) => z.object({ pw: z.string() }).parse(d))
   .handler(async ({ data }) => {
     check(data.pw);
-    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { supabaseAdmin } = await import("@/lib/db.server");
     const { data: rows, error } = await supabaseAdmin
       .from("customers").select("*").order("last_at", { ascending: false }).limit(500);
     if (error) throw new Error(error.message);
@@ -26,7 +26,7 @@ export const setBotPaused = createServerFn({ method: "POST" })
   .inputValidator((d) => z.object({ pw: z.string(), id: z.string().uuid(), paused: z.boolean() }).parse(d))
   .handler(async ({ data }) => {
     check(data.pw);
-    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { supabaseAdmin } = await import("@/lib/db.server");
     const { error } = await supabaseAdmin.from("customers").update({ bot_paused: data.paused } as never).eq("id", data.id);
     if (error) throw new Error(error.message);
     return { ok: true };
@@ -36,7 +36,7 @@ export const saveNote = createServerFn({ method: "POST" })
   .inputValidator((d) => z.object({ pw: z.string(), id: z.string().uuid(), notes: z.string().max(5000) }).parse(d))
   .handler(async ({ data }) => {
     check(data.pw);
-    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { supabaseAdmin } = await import("@/lib/db.server");
     const { error } = await supabaseAdmin.from("customers").update({ notes: data.notes } as never).eq("id", data.id);
     if (error) throw new Error(error.message);
     return { ok: true };
@@ -46,7 +46,7 @@ export const getMessages = createServerFn({ method: "POST" })
   .inputValidator((d) => z.object({ pw: z.string(), id: z.string().uuid() }).parse(d))
   .handler(async ({ data }) => {
     check(data.pw);
-    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { supabaseAdmin } = await import("@/lib/db.server");
     const [, { data: desc, error }] = await Promise.all([
       supabaseAdmin.from("customers").update({ unread: 0 }).eq("id", data.id).gt("unread", 0),
       supabaseAdmin.from("messages").select("*").eq("customer_id", data.id)
@@ -94,7 +94,7 @@ export const sendMessage = createServerFn({ method: "POST" })
   .inputValidator((d) => z.object({ pw: z.string(), id: z.string().uuid(), text: z.string().trim().min(1).max(4000) }).parse(d))
   .handler(async ({ data }) => {
     check(data.pw);
-    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { supabaseAdmin } = await import("@/lib/db.server");
     const { data: c, error } = await supabaseAdmin.from("customers").select("phone").eq("id", data.id).single();
     if (error || !c) throw new Error("العميل غير موجود");
     const res = await fetch("https://n8n.srv1994780.hstgr.cloud/webhook/actes-send", {
@@ -117,7 +117,7 @@ export const ensureCustomerByPhone = createServerFn({ method: "POST" })
   .inputValidator((d) => z.object({ pw: z.string(), phone: z.string().regex(/^\d{9,15}$/), name: z.string().max(200).optional() }).parse(d))
   .handler(async ({ data }) => {
     check(data.pw);
-    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { supabaseAdmin } = await import("@/lib/db.server");
     const { data: ex } = await supabaseAdmin.from("customers").select("id").eq("phone", data.phone).maybeSingle();
     if (ex) return { id: ex.id as string };
     const { data: c, error } = await supabaseAdmin.from("customers").insert({ phone: data.phone, name: data.name || null }).select("id").single();
@@ -132,7 +132,7 @@ export const sendAttachment = createServerFn({ method: "POST" })
   }).parse(d))
   .handler(async ({ data }) => {
     check(data.pw);
-    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { supabaseAdmin } = await import("@/lib/db.server");
     const { data: c, error } = await supabaseAdmin.from("customers").select("phone").eq("id", data.id).single();
     if (error || !c) throw new Error("العميل غير موجود");
     const bin = Uint8Array.from(atob(data.b64), (ch) => ch.charCodeAt(0));
@@ -166,7 +166,7 @@ export const uploadQuotePdf = createServerFn({ method: "POST" })
   .inputValidator((d) => z.object({ pw: z.string(), file_name: z.string().min(1).max(200), b64: z.string().max(23_000_000) }).parse(d))
   .handler(async ({ data }) => {
     check(data.pw);
-    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { supabaseAdmin } = await import("@/lib/db.server");
     const bin = Uint8Array.from(atob(data.b64), (ch) => ch.charCodeAt(0));
     const path = `quotes/${crypto.randomUUID()}.pdf`;
     const up = await supabaseAdmin.storage.from("crm-attachments").upload(path, bin, { contentType: "application/pdf" });
@@ -183,7 +183,7 @@ export const listOrders = createServerFn({ method: "POST" })
   .inputValidator((d) => z.object({ pw: z.string() }).parse(d))
   .handler(async ({ data }) => {
     check(data.pw);
-    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { supabaseAdmin } = await import("@/lib/db.server");
     const { data: rows, error } = await supabaseAdmin
       .from("orders").select("*").order("created_at", { ascending: false }).limit(500);
     if (error) throw new Error(error.message);
@@ -194,7 +194,7 @@ export const decideOrder = createServerFn({ method: "POST" })
   .inputValidator((d) => z.object({ pw: z.string(), id: z.string().uuid(), status: z.enum(["confirmed", "cancelled"]) }).parse(d))
   .handler(async ({ data }) => {
     check(data.pw);
-    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { supabaseAdmin } = await import("@/lib/db.server");
     const { data: o, error } = await supabaseAdmin.from("orders").select("*").eq("id", data.id).single();
     if (error || !o) throw new Error("الطلب غير موجود");
     if (o.status !== "pending") throw new Error("تم البت في هذا الطلب مسبقاً");
@@ -221,7 +221,7 @@ export const listTickets = createServerFn({ method: "POST" })
   .inputValidator((d) => z.object({ pw: z.string() }).parse(d))
   .handler(async ({ data }) => {
     check(data.pw);
-    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { supabaseAdmin } = await import("@/lib/db.server");
     const { data: rows, error } = await supabaseAdmin
       .from("support_tickets").select("*").order("created_at", { ascending: false }).limit(500);
     if (error) throw new Error(error.message);
@@ -241,7 +241,7 @@ export const updateTicket = createServerFn({ method: "POST" })
   }).parse(d))
   .handler(async ({ data }) => {
     check(data.pw);
-    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { supabaseAdmin } = await import("@/lib/db.server");
     const { data: t, error } = await supabaseAdmin.from("support_tickets").select("*").eq("id", data.id).single();
     if (error || !t) throw new Error("التذكرة غير موجودة");
     const tpl = TICKET_TEXT[data.status];
@@ -273,7 +273,7 @@ export const draftVendorQuery = createServerFn({ method: "POST" })
   .inputValidator((d) => z.object({ pw: z.string(), id: z.string().uuid() }).parse(d))
   .handler(async ({ data }) => {
     check(data.pw);
-    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { supabaseAdmin } = await import("@/lib/db.server");
     const { data: t } = await supabaseAdmin.from("support_tickets").select("*").eq("id", data.id).single();
     if (!t) throw new Error("التذكرة غير موجودة");
     const { askAI } = await import("@/lib/ai.server");
@@ -289,7 +289,7 @@ export const replyTicket = createServerFn({ method: "POST" })
   .inputValidator((d) => z.object({ pw: z.string(), id: z.string().uuid(), text: z.string().min(2).max(3000) }).parse(d))
   .handler(async ({ data }) => {
     check(data.pw);
-    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { supabaseAdmin } = await import("@/lib/db.server");
     const { data: t } = await supabaseAdmin.from("support_tickets").select("*").eq("id", data.id).single();
     if (!t) throw new Error("التذكرة غير موجودة");
     const text = `أكتس لاستيراد أنظمة الطاقة\nبخصوص تذكرة الدعم ${t.ticket_no}:\n\n${data.text}`;
@@ -310,7 +310,7 @@ export const listCatalog = createServerFn({ method: "POST" })
   .inputValidator((d) => z.object({ pw: z.string() }).parse(d))
   .handler(async ({ data }) => {
     check(data.pw);
-    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { supabaseAdmin } = await import("@/lib/db.server");
     const { data: rows, error } = await supabaseAdmin.from("catalog_items").select("*").order("sort");
     if (error) throw new Error(error.message);
     return rows;
@@ -329,7 +329,7 @@ export const saveCatalogItem = createServerFn({ method: "POST" })
   }).parse(d))
   .handler(async ({ data }) => {
     check(data.pw);
-    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { supabaseAdmin } = await import("@/lib/db.server");
     const { pw: _pw, key, specs, ...rest } = data;
     const { error } = await supabaseAdmin.from("catalog_items")
       .update({ ...rest, ...(specs ? { specs } : {}), updated_at: new Date().toISOString() }).eq("key", key);
@@ -349,7 +349,7 @@ export const saveQuote = createServerFn({ method: "POST" })
   }).parse(d))
   .handler(async ({ data }) => {
     check(data.pw);
-    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { supabaseAdmin } = await import("@/lib/db.server");
     const { pw: _pw, ...rest } = data;
     const total = rest.items.reduce((s, i) => s + i.price * i.qty, 0);
     const { data: row, error } = await supabaseAdmin.from("quotes").insert({ ...rest, total }).select("id, quote_no").single();
@@ -361,7 +361,7 @@ export const listQuotes = createServerFn({ method: "POST" })
   .inputValidator((d) => z.object({ pw: z.string() }).parse(d))
   .handler(async ({ data }) => {
     check(data.pw);
-    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { supabaseAdmin } = await import("@/lib/db.server");
     const { data: rows, error } = await supabaseAdmin.from("quotes").select("*").order("created_at", { ascending: false }).limit(100);
     if (error) throw new Error(error.message);
     return rows;
@@ -375,7 +375,7 @@ export const listReportRequests = createServerFn({ method: "POST" })
   .inputValidator((d) => z.object({ pw: z.string() }).parse(d))
   .handler(async ({ data }) => {
     check(data.pw);
-    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { supabaseAdmin } = await import("@/lib/db.server");
     const [r, f] = await Promise.all([
       supabaseAdmin.from("report_requests").select("*").order("created_at", { ascending: false }).limit(500),
       supabaseAdmin.from("preset_reports").select("preset_title,kind,file_name"),
@@ -389,7 +389,7 @@ export const uploadPresetReport = createServerFn({ method: "POST" })
   .inputValidator((d) => z.object({ pw: z.string(), preset_title: z.string().min(1).max(300), kind: Kind, file_name: z.string().min(1).max(200), b64: z.string().max(23_000_000) }).parse(d))
   .handler(async ({ data }) => {
     check(data.pw);
-    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { supabaseAdmin } = await import("@/lib/db.server");
     const bin = Uint8Array.from(atob(data.b64), (ch) => ch.charCodeAt(0));
     const path = `reports/${data.kind}/${crypto.randomUUID()}.pdf`;
     const up = await supabaseAdmin.storage.from("crm-attachments").upload(path, bin, { contentType: "application/pdf" });
@@ -403,7 +403,7 @@ export const openPresetReport = createServerFn({ method: "POST" })
   .inputValidator((d) => z.object({ pw: z.string(), preset_title: z.string().min(1).max(300), kind: Kind }).parse(d))
   .handler(async ({ data }) => {
     check(data.pw);
-    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { supabaseAdmin } = await import("@/lib/db.server");
     const { data: f } = await supabaseAdmin.from("preset_reports").select("path").eq("preset_title", data.preset_title).eq("kind", data.kind).maybeSingle();
     if (!f) throw new Error("لا يوجد ملف مرفوع لهذه المنظومة");
     const sig = await supabaseAdmin.storage.from("crm-attachments").createSignedUrl(f.path, 60 * 30);
@@ -415,7 +415,7 @@ export const sendReportRequest = createServerFn({ method: "POST" })
   .inputValidator((d) => z.object({ pw: z.string(), id: z.string().uuid(), preset_title: z.string().min(1).max(300) }).parse(d))
   .handler(async ({ data }) => {
     check(data.pw);
-    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { supabaseAdmin } = await import("@/lib/db.server");
     const { data: rq } = await supabaseAdmin.from("report_requests").select("*").eq("id", data.id).single();
     if (!rq) throw new Error("الطلب غير موجود");
     const kind = rq.kind as ReportKind;
@@ -449,7 +449,7 @@ export const getKwhPrice = createServerFn({ method: "POST" })
   .inputValidator((d) => z.object({ pw: z.string() }).parse(d))
   .handler(async ({ data }) => {
     check(data.pw);
-    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { supabaseAdmin } = await import("@/lib/db.server");
     const { data: r } = await supabaseAdmin.from("app_settings").select("value").eq("key", "kwh_price").maybeSingle();
     return { kwh_price: r ? Number(r.value) : 290 };
   });
@@ -458,7 +458,7 @@ export const setKwhPrice = createServerFn({ method: "POST" })
   .inputValidator((d) => z.object({ pw: z.string(), price: z.number().positive().max(100000) }).parse(d))
   .handler(async ({ data }) => {
     check(data.pw);
-    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { supabaseAdmin } = await import("@/lib/db.server");
     const { error } = await supabaseAdmin.from("app_settings").upsert({ key: "kwh_price", value: data.price, updated_at: new Date().toISOString() });
     if (error) throw new Error(error.message);
     return { kwh_price: data.price };

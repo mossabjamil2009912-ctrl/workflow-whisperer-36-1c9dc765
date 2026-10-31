@@ -26,7 +26,7 @@ export const Route = createFileRoute("/api/public/bot-report-request")({
         const p = Body.safeParse(raw);
         if (!p.success) return new Response(p.error.message, { status: 400 });
         const phone = p.data.phone.replace(/\D/g, "");
-        const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+        const { supabaseAdmin } = await import("@/lib/db.server");
         const { data: c } = await supabaseAdmin.from("customers").select("id").like("phone", `%${phone.slice(-9)}`).limit(1).maybeSingle();
         const { error } = await supabaseAdmin.from("report_requests").insert({
           phone, customer_id: c?.id ?? null, name: p.data.name, system_label: p.data.system, kind: p.data.kind,

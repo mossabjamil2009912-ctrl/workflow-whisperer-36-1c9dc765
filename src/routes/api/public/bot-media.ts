@@ -21,7 +21,7 @@ export const Route = createFileRoute("/api/public/bot-media")({
         const p = Body.safeParse(await request.json().catch(() => null));
         if (!p.success) return new Response(p.error.message, { status: 400 });
         const d = p.data;
-        const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+        const { supabaseAdmin } = await import("@/lib/db.server");
         const { data: c } = await supabaseAdmin.from("customers").select("id").eq("phone", d.phone.replace(/[^\d+]/g, "")).maybeSingle();
         if (!c) return Response.json({ ok: false });
         // ننتظر قليلاً حتى يُسجَّل الحوار نفسه، حتى لا تسبق فقاعة الملف رسالة العميل

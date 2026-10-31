@@ -29,7 +29,7 @@ export const Route = createFileRoute("/api/public/bot-message")({
         let raw: unknown;
         try { raw = await request.json(); } catch { return new Response("Bad JSON", { status: 400 }); }
         const items = Array.isArray(raw) ? raw : [raw];
-        const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+        const { supabaseAdmin } = await import("@/lib/db.server");
         const batchAt = Date.now(); let seq = 0;
 
         for (const it of items) {

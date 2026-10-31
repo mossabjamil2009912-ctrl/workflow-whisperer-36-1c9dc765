@@ -16,7 +16,7 @@ export const Route = createFileRoute("/api/public/bot-button-lock")({
         try { raw = await request.json(); } catch { return new Response("Bad JSON", { status: 400 }); }
         const context_id = String(raw.context_id ?? "").slice(0, 200);
         if (!context_id) return Response.json({ allowed: true });
-        const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+        const { supabaseAdmin } = await import("@/lib/db.server");
         const { error } = await (supabaseAdmin as any).from("bot_button_locks").insert({
           context_id,
           phone: String(raw.phone ?? "").slice(0, 30),
