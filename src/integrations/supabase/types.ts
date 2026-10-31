@@ -322,43 +322,58 @@ export type Database = {
       }
       report_requests: {
         Row: {
+          azimuth: string | null
+          city: string | null
           created_at: string
           customer_id: string | null
           file_name: string | null
           file_path: string | null
           id: string
           kind: string
+          lat: number | null
+          lon: number | null
           name: string | null
           phone: string
           sent_at: string | null
           status: string
           system_label: string | null
+          tilt: number | null
         }
         Insert: {
+          azimuth?: string | null
+          city?: string | null
           created_at?: string
           customer_id?: string | null
           file_name?: string | null
           file_path?: string | null
           id?: string
           kind?: string
+          lat?: number | null
+          lon?: number | null
           name?: string | null
           phone: string
           sent_at?: string | null
           status?: string
           system_label?: string | null
+          tilt?: number | null
         }
         Update: {
+          azimuth?: string | null
+          city?: string | null
           created_at?: string
           customer_id?: string | null
           file_name?: string | null
           file_path?: string | null
           id?: string
           kind?: string
+          lat?: number | null
+          lon?: number | null
           name?: string | null
           phone?: string
           sent_at?: string | null
           status?: string
           system_label?: string | null
+          tilt?: number | null
         }
         Relationships: [
           {

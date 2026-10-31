@@ -1,0 +1,1 @@
+ALTER TABLE public.report_requests ADD COLUMN IF NOT EXISTS city text, ADD COLUMN IF NOT EXISTS lat double precision, ADD COLUMN IF NOT EXISTS lon double precision, ADD COLUMN IF NOT EXISTS tilt double precision, ADD COLUMN IF NOT EXISTS azimuth text;
