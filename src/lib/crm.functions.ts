@@ -358,6 +358,16 @@ export const createCatalogItem = createServerFn({ method: "POST" })
     return { key };
   });
 
+export const deleteCatalogItem = createServerFn({ method: "POST" })
+  .inputValidator((d) => z.object({ pw: z.string(), key: z.string().min(1).max(100) }).parse(d))
+  .handler(async ({ data }) => {
+    check(data.pw);
+    const { supabaseAdmin } = await import("@/lib/db.server");
+    const { error } = await supabaseAdmin.from("catalog_items").delete().eq("key", data.key);
+    if (error) throw new Error(error.message);
+    return { ok: true };
+  });
+
 const ruleSchema = z.object({
   scope: z.enum(["all", "res", "com", "custom"]),
   type: z.enum(["all", "res", "com"]),
