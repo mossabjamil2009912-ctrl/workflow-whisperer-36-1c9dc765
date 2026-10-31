@@ -513,12 +513,12 @@ function Chat({ pw, c, onBack, onInfo }: { pw: string; c: Cust; onBack: () => vo
   const [sending, setSending] = useState(false);
   const [err, setErr] = useState("");
   const pending = usePending(c.id);
-  const { data: msgs = [], refetch } = useQuery({
+  const { data: msgs = [], refetch } = useQuery(offlineQuery({
     queryKey: ["messages", c.id],
     queryFn: () => get({ data: { pw, id: c.id } }),
     refetchInterval: 10000,
     staleTime: 5000,
-  });
+  }));
   const end = useRef<HTMLDivElement>(null);
   const box = useRef<HTMLDivElement>(null);
   const lastId = msgs.length ? msgs[msgs.length - 1]!.id : null;
