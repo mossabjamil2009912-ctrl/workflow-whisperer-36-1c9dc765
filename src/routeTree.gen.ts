@@ -20,6 +20,7 @@ import { Route as ApiPublicBotOrderStatusRouteImport } from './routes/api/public
 import { Route as ApiPublicBotPausedRouteImport } from './routes/api/public/bot-paused'
 import { Route as ApiPublicBotReportRequestRouteImport } from './routes/api/public/bot-report-request'
 import { Route as ApiPublicBotTicketRouteImport } from './routes/api/public/bot-ticket'
+import { Route as ApiPublicCatalogSeedRouteImport } from './routes/api/public/catalog-seed'
 import { Route as ApiPublicCrmMediaRouteImport } from './routes/api/public/crm-media'
 
 const IndexRoute = IndexRouteImport.update({
@@ -78,6 +79,11 @@ const ApiPublicBotTicketRoute = ApiPublicBotTicketRouteImport.update({
   path: '/api/public/bot-ticket',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiPublicCatalogSeedRoute = ApiPublicCatalogSeedRouteImport.update({
+  id: '/api/public/catalog-seed',
+  path: '/api/public/catalog-seed',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiPublicCrmMediaRoute = ApiPublicCrmMediaRouteImport.update({
   id: '/api/public/crm-media',
   path: '/api/public/crm-media',
@@ -96,6 +102,7 @@ export interface FileRoutesByFullPath {
   '/api/public/bot-paused': typeof ApiPublicBotPausedRoute
   '/api/public/bot-report-request': typeof ApiPublicBotReportRequestRoute
   '/api/public/bot-ticket': typeof ApiPublicBotTicketRoute
+  '/api/public/catalog-seed': typeof ApiPublicCatalogSeedRoute
   '/api/public/crm-media': typeof ApiPublicCrmMediaRoute
 }
 export interface FileRoutesByTo {
@@ -110,6 +117,7 @@ export interface FileRoutesByTo {
   '/api/public/bot-paused': typeof ApiPublicBotPausedRoute
   '/api/public/bot-report-request': typeof ApiPublicBotReportRequestRoute
   '/api/public/bot-ticket': typeof ApiPublicBotTicketRoute
+  '/api/public/catalog-seed': typeof ApiPublicCatalogSeedRoute
   '/api/public/crm-media': typeof ApiPublicCrmMediaRoute
 }
 export interface FileRoutesById {
@@ -125,6 +133,7 @@ export interface FileRoutesById {
   '/api/public/bot-paused': typeof ApiPublicBotPausedRoute
   '/api/public/bot-report-request': typeof ApiPublicBotReportRequestRoute
   '/api/public/bot-ticket': typeof ApiPublicBotTicketRoute
+  '/api/public/catalog-seed': typeof ApiPublicCatalogSeedRoute
   '/api/public/crm-media': typeof ApiPublicCrmMediaRoute
 }
 export interface FileRouteTypes {
@@ -141,6 +150,7 @@ export interface FileRouteTypes {
     | '/api/public/bot-paused'
     | '/api/public/bot-report-request'
     | '/api/public/bot-ticket'
+    | '/api/public/catalog-seed'
     | '/api/public/crm-media'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -155,6 +165,7 @@ export interface FileRouteTypes {
     | '/api/public/bot-paused'
     | '/api/public/bot-report-request'
     | '/api/public/bot-ticket'
+    | '/api/public/catalog-seed'
     | '/api/public/crm-media'
   id:
     | '__root__'
@@ -169,6 +180,7 @@ export interface FileRouteTypes {
     | '/api/public/bot-paused'
     | '/api/public/bot-report-request'
     | '/api/public/bot-ticket'
+    | '/api/public/catalog-seed'
     | '/api/public/crm-media'
   fileRoutesById: FileRoutesById
 }
@@ -184,6 +196,7 @@ export interface RootRouteChildren {
   ApiPublicBotPausedRoute: typeof ApiPublicBotPausedRoute
   ApiPublicBotReportRequestRoute: typeof ApiPublicBotReportRequestRoute
   ApiPublicBotTicketRoute: typeof ApiPublicBotTicketRoute
+  ApiPublicCatalogSeedRoute: typeof ApiPublicCatalogSeedRoute
   ApiPublicCrmMediaRoute: typeof ApiPublicCrmMediaRoute
 }
 
@@ -266,6 +279,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiPublicBotTicketRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/public/catalog-seed': {
+      id: '/api/public/catalog-seed'
+      path: '/api/public/catalog-seed'
+      fullPath: '/api/public/catalog-seed'
+      preLoaderRoute: typeof ApiPublicCatalogSeedRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/public/crm-media': {
       id: '/api/public/crm-media'
       path: '/api/public/crm-media'
@@ -288,6 +308,7 @@ const rootRouteChildren: RootRouteChildren = {
   ApiPublicBotPausedRoute: ApiPublicBotPausedRoute,
   ApiPublicBotReportRequestRoute: ApiPublicBotReportRequestRoute,
   ApiPublicBotTicketRoute: ApiPublicBotTicketRoute,
+  ApiPublicCatalogSeedRoute: ApiPublicCatalogSeedRoute,
   ApiPublicCrmMediaRoute: ApiPublicCrmMediaRoute,
 }
 export const routeTree = rootRouteImport
