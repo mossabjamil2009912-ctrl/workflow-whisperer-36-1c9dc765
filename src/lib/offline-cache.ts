@@ -25,10 +25,10 @@ export async function loadSnapshot<T>(key: string): Promise<T | undefined> {
   }
 }
 
-/** When the on-device copy was written (ms since epoch), or null. */
-export async function snapshotTime(key: string): Promise<number | null> {
+/** When the on-device copy of a screen was written (ms since epoch), or null. */
+export async function snapshotTime(queryKey: readonly unknown[]): Promise<number | null> {
   try {
-    const v = await get<Stamped<unknown>>(PREFIX + key);
+    const v = await get<Stamped<unknown>>(PREFIX + JSON.stringify(queryKey));
     return v?.at ?? null;
   } catch {
     return null;
