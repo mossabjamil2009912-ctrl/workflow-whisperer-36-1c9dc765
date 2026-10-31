@@ -20,4 +20,4 @@
 - [x] Fix duplicate bot replies — guard live: same message accepted once, second copy rejected
 - [x] Restore catalog into the dashboard (45 items + 30 datasheet PDFs, kWh price 290)
 - [x] Connect n8n in the new workspace
-- [x] Datasheets + full catalog stored inside the project
+- [x] Datasheets + full data snapshot (data/) stored inside the project and loaded into the database
