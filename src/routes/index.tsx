@@ -194,7 +194,12 @@ function Dashboard({ pw, onLogout }: { pw: string; onLogout: () => void }) {
     (!unreadOnly || c.unread > 0) &&
     (!city || (c.city ?? "").trim() === city) &&
     (!sys || sysType(c.system) === sys) &&
-    ((c.name ?? "").includes(q) || c.phone.includes(q.replace(/\s/g, "")))), [customers, q, filter, city, sys, unreadOnly]);
+    (() => {
+      const t = q.trim().toLowerCase();
+      if (!t) return true;
+      const d = t.replace(/\D/g, "").replace(/^0+/, "");
+      return (c.name ?? "").toLowerCase().includes(t) || (d.length > 0 && c.phone.replace(/\D/g, "").includes(d));
+    })()), [customers, q, filter, city, sys, unreadOnly]);
   const open = customers.find((c) => c.id === openId) ?? null;
   const openOrders = open ? orders.filter((o) => o.customer_id === open.id || o.phone.replace(/\D/g, "").endsWith(open.phone.replace(/\D/g, "").slice(-9))) : [];
 
