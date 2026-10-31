@@ -555,7 +555,7 @@ export function QuoteBuilder({ pw, initialCustomerId }: { pw: string; initialCus
               <button key={m} type="button" onClick={() => { setComM(m); setDaily(""); }} className={`rounded-lg border px-2 py-1.5 text-xs font-semibold ${comM === m ? "border-primary bg-primary/10 text-primary" : "bg-card"}`}>{m === "bill" ? "فاتورة" : m === "kwh" ? "استهلاك شهري" : "الديزل"}</button>
             ))}
             {(path === "res" || (path === "com" && comM)) && (
-              <form onSubmit={(e) => { e.preventDefault(); const n = Number(daily); if (!(n > 0)) return; setInvKw(null); const opts = path === "res" ? optionsForResBill(n, kwhPrice) : optionsForCom(comM ?? "bill", n, kwhPrice); const ic = inverterChoices(opts); if (ic.length) { setTiers(null); setInvs(ic); return; } setInvs(null); const t = tiersFrom(opts); if (!t) { setTiers(null); return setMsg("لا توجد منظومة مناسبة — يُحوّل للموظف المختص"); } setTiers(t); }} className="flex items-center gap-1">
+              <form onSubmit={(e) => { e.preventDefault(); const n = Number(daily); if (!(n > 0)) return; setInvKw(null); const opts = path === "res" ? optionsForResBill(n, kwhPrice) : optionsForCom(comM ?? "bill", n, kwhPrice); const ic = inverterChoices(opts); if (ic.length) { setTiers(null); setInvs(ic); return; } setInvs(null); const t = tiersFrom(opts); if (!t) { setTiers(null); return setMsg("لا توجد منظومة مناسبة — يُحوّل للموظف المختص"); } showTiers(t); }} className="flex items-center gap-1">
                 <input autoFocus value={daily} onChange={(e) => setDaily(e.target.value.replace(/[^\d.]/g, ""))} inputMode="decimal" placeholder={path === "res" || comM === "bill" ? "الفاتورة الشهرية (ريال)" : comM === "kwh" ? "الاستهلاك الشهري (كيلووات)" : "الديزل الشهري (لتر)"} className="w-40 rounded-lg border bg-card px-2 py-1.5 text-xs" />
                 <button type="submit" className="rounded-lg bg-primary px-2 py-1.5 text-xs font-bold text-primary-foreground">عرض</button>
               </form>
@@ -576,12 +576,12 @@ export function QuoteBuilder({ pw, initialCustomerId }: { pw: string; initialCus
             {!invKw ? (<>
               <div className="mb-1 text-xs font-bold">اختر قدرة الإنفرتر:</div>
               <div className="flex flex-wrap gap-1">
-                {invs.map((c) => <button key={c.kw} type="button" onClick={() => { const only = c.single && c.three ? null : (c.single ?? c.three)!; if (only) { setInvs(null); setTiers(tiersFrom([only])); } else setInvKw(c); }} className="rounded-lg border bg-card px-3 py-1.5 text-xs font-bold hover:bg-muted">{c.kw} كيلو</button>)}
+                {invs.map((c) => <button key={c.kw} type="button" onClick={() => { const only = c.single && c.three ? null : (c.single ?? c.three)!; if (only) { setInvs(null); showTiers(tiersFrom([only])); } else setInvKw(c); }} className="rounded-lg border bg-card px-3 py-1.5 text-xs font-bold hover:bg-muted">{c.kw} كيلو</button>)}
               </div>
             </>) : (<>
               <div className="mb-1 text-xs font-bold">إنفرتر {invKw.kw} كيلو — سنجل أو ثري فاز؟</div>
               <div className="flex flex-wrap gap-1">
-                {([["single", "سنجل فاز"], ["three", "ثري فاز"]] as const).map(([k, label]) => { const p = invKw[k]; return p ? <button key={k} type="button" onClick={() => { setInvs(null); setInvKw(null); setTiers(tiersFrom([p])); }} className="rounded-lg border bg-card px-3 py-1.5 text-xs font-bold hover:bg-muted">{label}</button> : null; })}
+                {([["single", "سنجل فاز"], ["three", "ثري فاز"]] as const).map(([k, label]) => { const p = invKw[k]; return p ? <button key={k} type="button" onClick={() => { setInvs(null); setInvKw(null); showTiers(tiersFrom([p])); }} className="rounded-lg border bg-card px-3 py-1.5 text-xs font-bold hover:bg-muted">{label}</button> : null; })}
                 {invs.length > 1 && <button type="button" onClick={() => setInvKw(null)} className="rounded-lg bg-muted px-3 py-1.5 text-xs">رجوع</button>}
               </div>
             </>)}
