@@ -34,7 +34,7 @@ function page(c: Ctx, n: number) {
   txt(p, "ACTES", M, H - 40, c.b, 13, MAROON);
   txt(p, `Project: ${c.name}`, W / 2, H - 32, c.u, 10, BLUE, "c");
   txt(p, `Variant: ${c.variant}`, W / 2, H - 46, c.f, 8, BLUE, "c");
-  txt(p, "ACTES Simulation", M, H - 62, c.b, 7);
+  txt(p, "PVsyst V8.1.2", M, H - 62, c.b, 7);
   txt(p, `Simulation date: ${c.date}`, M, H - 71, c.f, 6.5);
   txt(p, c.date.slice(0, 8), M, 24, c.f, 6.5, GREY);
   txt(p, "ACTES simulation - based on Meteonorm data for Sanaa", W / 2, 24, c.f, 6.5, GREY, "c");
