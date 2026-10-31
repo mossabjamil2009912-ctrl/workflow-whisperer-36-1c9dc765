@@ -24,3 +24,4 @@
 - [x] Connect n8n in the new workspace (linked: سفيان's n8n, gateway, 43 workflows visible)
 - [x] Desktop/PWA opens fully offline: start page cached on first visit, every screen's data copied to the device (verified: offline reload shows the app)
 - [ ] Offline check while logged in (all chats/orders visible with internet off) — needs the dashboard password to sign in for the test
+- [ ] PVsyst: customer picks city/tilt/direction in bot; report popup in dashboard; PVsyst logo + ACTES corner logo

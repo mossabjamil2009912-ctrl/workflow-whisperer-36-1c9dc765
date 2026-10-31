@@ -23,3 +23,23 @@ describe("simulation report numbers", () => {
     expect(shapeArabic("محمد")).not.toBe("محمد");
   });
 });
+
+import { parseTilt, aspectsOf, SANAA_SITE } from "@/lib/pvsyst-calc";
+describe("customer site choices", () => {
+  it("tilt must be 0–60 degrees, Arabic digits allowed", () => {
+    expect(parseTilt("15")).toBe(15);
+    expect(parseTilt("٢٥")).toBe(25);
+    expect(parseTilt("75")).toBeNull();
+    expect(parseTilt("abc")).toBeNull();
+  });
+  it("directions map to PVGIS aspects", () => {
+    expect(aspectsOf("s")).toEqual([0]);
+    expect(aspectsOf("ns")).toEqual([0, 180]);
+    expect(aspectsOf("ew")).toEqual([-90, 90]);
+  });
+  it("more sun on the panels means more production", () => {
+    const spec = { kw: 50, invCount: 2, three: true, panels: 150, batKwh: 128 };
+    const low = simulate(spec, { ...SANAA_SITE, globInc: SANAA_SITE.globInc.map((g) => g * 0.87) });
+    expect(low.produced).toBeLessThan(simulate(spec).produced);
+  });
+});

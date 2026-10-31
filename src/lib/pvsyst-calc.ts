@@ -26,6 +26,25 @@ export const LOSSES: [string, string][] = [
   ["Battery global loss", "-0.29%"],
 ];
 
+export type Direction = "s" | "n" | "e" | "w" | "ns" | "ew";
+export const DIR_LABEL: Record<Direction, string> = { s: "جنوب", n: "شمال", e: "شرق", w: "غرب", ns: "جنوب وشمال", ew: "شرق وغرب" };
+/** PVGIS aspect angles (0 south, 90 west, -90 east, 180 north) for a direction choice. */
+export function aspectsOf(d: Direction): number[] {
+  return ({ s: [0], n: [180], e: [-90], w: [90], ns: [0, 180], ew: [-90, 90] } as const)[d].slice();
+}
+export const CITIES: Record<string, { name: string; lat: number; lon: number }> = {
+  sanaa: { name: "Sanaa", lat: 15.3539, lon: 44.2059 },
+  aden: { name: "Aden", lat: 12.7855, lon: 45.0187 },
+};
+/** Tilt typed by the customer: whole/decimal degrees 0–60 (Arabic digits allowed), else null. */
+export function parseTilt(v: string | number | null | undefined): number | null {
+  if (v == null) return null;
+  const n = Number(digits(String(v)).replace(/[°\s]/g, "").replace("،", "."));
+  return Number.isFinite(n) && n >= 0 && n <= 60 ? n : null;
+}
+export type SiteData = { name: string; lat: number; lon: number; alt: number; tilt: number; dir: Direction; globHor: number[]; diffHor: number[]; tAmb: number[]; globInc: number[]; source: string };
+export const SANAA_SITE: SiteData = { name: "Sanaa", lat: SITE.lat, lon: SITE.lon, alt: SITE.alt, tilt: SITE.tilt, dir: "ns", globHor: REF.globHor, diffHor: REF.diffHor, tAmb: REF.tAmb, globInc: REF.globInc, source: "Meteonorm 9.0" };
+
 export type SystemSpec = { kw: number; invCount: number; three: boolean; panels: number; batKwh: number };
 
 const digits = (s: string) => s.replace(/[٠-٩]/g, (d) => String(d.charCodeAt(0) - 0x660));
@@ -49,25 +68,25 @@ export function parseSystem(label: string | null | undefined): SystemSpec | null
 
 const r = (n: number, d = 0) => Math.round(n * 10 ** d) / 10 ** d;
 
-export function simulate(s: SystemSpec) {
+export function simulate(s: SystemSpec, site: SiteData = SANAA_SITE) {
   const kwp = r((s.panels * PANEL_W) / 1000, 2);
-  const scale = kwp / REF.kwp;
   const toUser = REF.produced / REF.eArray.reduce((a, b) => a + b, 0);
-  const eArray = REF.eArray.map((e) => r(e * scale));
-  const eGrid = eArray.map((e) => r(e * toUser));
+  // Output to the user = kWp × plane irradiation × PR (the reference run's PR: 285.12 × 2338.5 × 0.8651 = 576,816 kWh).
+  const eGrid = site.globInc.map((g) => r(kwp * g * PR));
+  const eArray = eGrid.map((e) => r(e / toUser));
+  const globEff = site.globInc.map((g, i) => r(g * (REF.globEff[i]! / REF.globInc[i]!), 1));
   const produced = eGrid.reduce((a, b) => a + b, 0);
-  // Customer load: what the battery covers each night plus daytime use, capped by production.
   const dailyNeed = Math.min(produced / 365, Math.max(s.batKwh * 0.9 + kwp * 1.5, kwp * 2));
   const eUser = DAYS.map((d) => r(dailyNeed * d));
   const used = eUser.reduce((a, b) => a + b, 0);
-  const prMonth = REF.globInc.map((g, i) => r(eGrid[i]! / (g * kwp), 3));
+  const prMonth = site.globInc.map(() => r(PR, 3));
   const acKw = s.kw * s.invCount;
   const batV = s.batKwh >= 30 ? 640 : 51.2;
   const series = s.panels >= 18 ? 18 : Math.max(1, s.panels);
   const strings = Math.ceil(s.panels / series);
   const sheds = Math.max(2, Math.ceil(s.panels / 18));
   return {
-    kwp, acKw, produced, used,
+    site, globEff, kwp, acKw, produced, used,
     specific: r(produced / kwp),
     pr: r(PR * 100, 2),
     sf: 100,
