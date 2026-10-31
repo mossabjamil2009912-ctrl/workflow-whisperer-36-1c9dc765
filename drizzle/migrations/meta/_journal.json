@@ -57,6 +57,13 @@
       "when": 1793452162045,
       "tag": "0007_create_crm_core_tables",
       "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1793452507764,
+      "tag": "0008_migration",
+      "breakpoints": true
     }
   ]
 }
