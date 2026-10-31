@@ -9,7 +9,7 @@ type Stamped<T> = { data: T; at: number };
 /** Remembers the newest successful copy of a screen's data on the device. */
 export async function saveSnapshot<T>(key: string, data: T) {
   try {
-    await set<Stamped<T>>(PREFIX + key, { data, at: Date.now() });
+    await set(PREFIX + key, { data, at: Date.now() } satisfies Stamped<T>);
   } catch {
     /* storage full or blocked — the app keeps working from memory */
   }
