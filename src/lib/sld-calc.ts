@@ -21,7 +21,7 @@ export function design(s: SystemSpec) {
   const panels = Math.max(1, s.panels);
   const strings = Math.ceil(panels / maxPer);
   const perString = Math.ceil(panels / strings);
-  const voc = +(perString * PANEL.voc * 1.0).toFixed(0);
+  const voc = Math.floor(perString * PANEL.voc);
   const vmp = perString * PANEL.vmp;
   const kwp = (panels * PANEL.w) / 1000;
   const totalKw = s.kw * s.invCount;

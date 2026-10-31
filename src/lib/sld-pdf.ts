@@ -58,7 +58,8 @@ export async function buildSld(name: string, spec: SystemSpec, when = new Date()
   doc.setTitle(`${name} - SLD`); doc.setAuthor("ACTES");
   p.drawRectangle({ x: 0, y: 0, width: W, height: H, color: BG });
   const ph = d.three ? "3PH" : "1PH";
-  const lw = 60, lh = (logo.height / logo.width) * lw;
+  const lw = 70, lh = (logo.height / logo.width) * lw;
+  p.drawRectangle({ x: W - lw - 22, y: H - lh - 16, width: lw + 12, height: lh + 12, color: WHITE });
   p.drawImage(logo, { x: W - lw - 16, y: H - lh - 10, width: lw, height: lh });
   const date = `${String(when.getDate()).padStart(2, "0")}/${String(when.getMonth() + 1).padStart(2, "0")}/${when.getFullYear()}`;
   const nm = shapeArabic(name);
@@ -100,7 +101,7 @@ export async function buildSld(name: string, spec: SystemSpec, when = new Date()
   t(c, "DC IN", ix - 4, 140 + d.mpptInputs * 8 + 6, 6, DC, false, "r");
   badge(c, 392, 200, d.drops.dcIn, 3);
   // battery link W3
-  const bus = ix + 75;
+  const bus = ix + 120;
   line(c, bx + 152, by + 25, bus, by + 25, DC, 1.4); line(c, bus, iy + ih, bus, by + 25, DC, 1.4);
   dot(c, bus, iy + ih, DC); dot(c, bus, by + 25, DC);
   t(c, "BAT", bus + 6, 240, 6.5, DC); t(c, "W3", bus + 16, 268, 7, DC, true);
@@ -118,7 +119,7 @@ export async function buildSld(name: string, spec: SystemSpec, when = new Date()
   // EPS
   const ey = 220;
   line(c, ix + iw, 178, 630, 178, AC, 1.2); line(c, 630, 178, 630, ey + 20, AC, 1.2); line(c, 630, ey + 20, ax, ey + 20, AC, 1.2);
-  t(c, "EPS / BACKUP", 636, 196, 6, AC); t(c, "COMM", bus + 58, 200, 6, COM);
+  t(c, "EPS / BACKUP", 636, 196, 6, AC); t(c, "COMM", bus + 30, 200, 6, COM);
   box(c, ax, ey, aw, 40, "EPS OUTPUT BOARD", [`MCB ${d.acBreaker} A + RCD 30 mA`, "AC SPD Type 2"], AC);
   badge(c, 636, ey + 26, d.drops.eps, 1.5);
   // W5 -> meter -> grid
@@ -136,9 +137,9 @@ export async function buildSld(name: string, spec: SystemSpec, when = new Date()
 
   // ---- Communication
   const cy1 = 360, cy2 = 375;
-  line(c, bx + 76, by + 55, bx + 76, cy1, COM, 1, [3, 2]); line(c, bx + 76, cy1, bus + 52, cy1, COM, 1, [3, 2]); line(c, bus + 52, cy1, bus + 52, iy + ih, COM, 1, [3, 2]);
+  line(c, bx + 76, by + 55, bx + 76, cy1, COM, 1, [3, 2]); line(c, bx + 76, cy1, bus + 24, cy1, COM, 1, [3, 2]); line(c, bus + 24, cy1, bus + 24, iy + ih, COM, 1, [3, 2]);
   t(c, "C1 — BMS CAN / RS485 (shielded)", 380, cy1 - 4, 6.5, COM, true);
-  line(c, bus + 52, cy2, mx, cy2, COM, 1, [3, 2]); line(c, mx, cy2, mx, 166, COM, 1, [3, 2]); dot(c, bus + 52, cy2, COM);
+  line(c, bus + 24, cy2, mx, cy2, COM, 1, [3, 2]); line(c, mx, cy2, mx, 166, COM, 1, [3, 2]); dot(c, bus + 24, cy2, COM);
   t(c, "C2 — METER RS485 (Modbus)", 820, cy2 - 4, 6.5, COM, true);
 
   // ---- Earthing
