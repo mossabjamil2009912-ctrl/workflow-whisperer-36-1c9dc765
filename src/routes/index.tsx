@@ -292,6 +292,12 @@ function Dashboard({ pw, onLogout }: { pw: string; onLogout: () => void }) {
 
 
         <div className="space-y-2.5 rounded-xl border border-border bg-card p-2.5 shadow-sm lg:flex lg:min-h-0 lg:flex-1 lg:flex-col lg:space-y-1.5 lg:p-2">
+          <div className="relative">
+            <Search className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+            <input type="search" value={q} onChange={(e) => setQ(e.target.value)} placeholder="ابحث باسم العميل أو رقمه..."
+              aria-label="بحث عن عميل" className="w-full rounded-lg border border-input bg-background py-2 pl-9 pr-9 text-sm outline-none focus:ring-2 focus:ring-ring" />
+            {q && <button onClick={() => setQ("")} aria-label="مسح البحث" className="absolute left-2 top-1/2 -translate-y-1/2 rounded p-1 text-muted-foreground hover:bg-muted"><X className="h-4 w-4" /></button>}
+          </div>
           <div className="flex gap-2 overflow-x-auto pb-1">
             {(["all", "human", "quote", "cod", "buy"] as (Stage | "all")[]).map((s) => {
               const n = customers.filter((c) => c.unread > 0 && (s === "all" || c.stage === s)).length;
