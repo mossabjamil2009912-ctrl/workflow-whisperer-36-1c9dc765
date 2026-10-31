@@ -1,4 +1,5 @@
-import { useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { applyAutoRules, type CatItem } from "@/lib/auto-rules";
 import { useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { Search, FilePlus2, Save, Minus, Plus, Trash2, Check, Zap, Battery, Sun, Box, ShieldCheck, Server, Home, Cpu, Cable, Wrench, Printer, History, Share2, X, Download } from "lucide-react";
@@ -7,7 +8,7 @@ import { BOT_PRESETS } from "@/lib/bot-presets";
 import logoClean from "@/assets/actes-logo-clean.png";
 
 type Row = Awaited<ReturnType<typeof listCatalog>>[number];
-type Line = { key: string; name: string; unit: string | null; price: number; qty: number; specs: string[] };
+type Line = { key: string; name: string; unit: string | null; price: number; qty: number; specs: string[]; auto?: boolean };
 
 const TABLES: { k: string; t: string; i: typeof Zap }[] = [
   { k: "inverters", t: "الإنفرترات", i: Zap },
@@ -389,7 +390,18 @@ export function QuoteBuilder({ pw, initialCustomerId }: { pw: string; initialCus
     else n[r.key] = { key: r.key, name: r.name, unit: r.unit, price: Number(r.price ?? 0), qty: 1, specs: specsOf(r) };
     return n;
   });
-  const setQty = (k: string, qty: number) => setLines((p) => (p[k] ? { ...p, [k]: { ...p[k], qty: Math.max(1, qty || 1) } } : p));
+  const setQty = (k: string, qty: number) => setLines((p) => (p[k] ? { ...p, [k]: { ...p[k], qty: Math.max(1, qty || 1), auto: false } } : p));
+  // Auto-add rules from the catalog: matching items join the quote; a deleted auto item stays out of this quote.
+  const [quoteType, setQuoteType] = useState<"res" | "com" | null>(null);
+  const [dismissed, setDismissed] = useState<Set<string>>(new Set());
+  const withAuto = (ls: Line[], t = quoteType, skip = dismissed) => applyAutoRules(ls, rows as CatItem[], catalogKeyFor, t, skip);
+  useEffect(() => {
+    if (!rows.length) return;
+    const cur = Object.values(lines), next = withAuto(cur);
+    const sig = (ls: Line[]) => ls.filter((l) => l.auto).map((l) => l.key + ":" + l.qty).sort().join("|");
+    if (sig(cur) !== sig(next) || cur.filter((l) => !l.auto).length !== next.filter((l) => !l.auto).length) setLines(Object.fromEntries(next.map((l) => [l.key, l])));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [lines, rows, quoteType, dismissed]);
   const [swapKey, setSwapKey] = useState<string | null>(null);
   const [editNote, setEditNote] = useState(false);
   const chosenRef = useRef<HTMLHeadingElement>(null);
@@ -405,7 +417,7 @@ export function QuoteBuilder({ pw, initialCustomerId }: { pw: string; initialCus
     return n;
   });
   const closePreview = () => { setPreview(null); setEditNote(true); setTimeout(() => chosenRef.current?.scrollIntoView({ behavior: "smooth", block: "start" }), 50); };
-  const remove = (k: string) => setLines((p) => { const n = { ...p }; delete n[k]; return n; });
+  const remove = (k: string) => { if (lines[k]?.auto) setDismissed((s) => new Set(s).add(k)); setLines((p) => { const n = { ...p }; delete n[k]; return n; }); };
   const addCustom = () => {
     const price = Number(custom.price);
     if (!custom.name.trim() || !(price >= 0)) return;
@@ -521,12 +533,16 @@ export function QuoteBuilder({ pw, initialCustomerId }: { pw: string; initialCus
       if (r) out.push({ key: r.key, name: r.name, unit: r.unit, price: Number(r.price ?? 0), qty, specs: specsOf(r) });
     }
     if (!out.length) return setMsg("أصناف هذه المنظومة غير متوفرة في قائمة الأصناف");
-    setLines(Object.fromEntries(out.map((l) => [l.key, l])));
+    const t = p.type ?? "res", full = withAuto(out, t, new Set());
+    setQuoteType(t); setDismissed(new Set());
+    setLines(Object.fromEntries(full.map((l) => [l.key, l])));
     setShowHist(false);
-    void generate(out);
+    void generate(full);
   };
   const loadQuote = (qt: (typeof quotes)[number]) => {
-    const its = (qt.items as unknown as Line[]) ?? [];
+    // Saved quotes keep their items as they were: auto lines become ordinary lines.
+    const its = ((qt.items as unknown as Line[]) ?? []).map((l) => ({ ...l, auto: false }));
+    setQuoteType(null); setDismissed(new Set(its.map((l) => l.key)));
     setLines(Object.fromEntries(its.map((l) => [l.key, l])));
     setCustId(qt.customer_id); setCust({ name: qt.customer_name ?? "", phone: qt.phone ?? "", city: qt.city ?? "" });
     setNotes(qt.notes ?? ""); setNo(qt.quote_no); setShowHist(false);
@@ -669,7 +685,7 @@ export function QuoteBuilder({ pw, initialCustomerId }: { pw: string; initialCus
           {chosen.length === 0 && <li className="rounded-lg border border-dashed p-4 text-center text-xs text-muted-foreground">اضغط على أي صنف من الجداول لإضافته</li>}
           {chosen.map((l) => (
             <li key={l.key} className="flex items-center gap-2 rounded-md bg-muted/50 px-2 py-1 text-xs animate-in fade-in slide-in-from-left-2">
-              <div className="min-w-0 flex-1"><div className="font-semibold">{l.name}</div>{l.specs.length > 0 && <ul className="my-0.5 space-y-0.5 border-r-2 border-primary/40 pr-1.5 text-[10px] leading-snug text-muted-foreground">{l.specs.map((s, i) => { const k = s.indexOf(":"); return <li key={i}>{k > 0 && k < 60 ? <><b className="text-foreground">{s.slice(0, k + 1)}</b>{s.slice(k + 1)}</> : s}</li>; })}</ul>}<div className="mt-1 flex flex-wrap items-center gap-1 text-[10px]">
+              <div className="min-w-0 flex-1"><div className="font-semibold">{l.name}{l.auto && <span className="mr-1 rounded bg-primary/15 px-1 text-[9px] font-bold text-primary">تلقائي</span>}</div>{l.specs.length > 0 && <ul className="my-0.5 space-y-0.5 border-r-2 border-primary/40 pr-1.5 text-[10px] leading-snug text-muted-foreground">{l.specs.map((s, i) => { const k = s.indexOf(":"); return <li key={i}>{k > 0 && k < 60 ? <><b className="text-foreground">{s.slice(0, k + 1)}</b>{s.slice(k + 1)}</> : s}</li>; })}</ul>}<div className="mt-1 flex flex-wrap items-center gap-1 text-[10px]">
                 <button type="button" aria-label="إنقاص" onClick={() => setQty(l.key, l.qty - 1)} className="rounded bg-card p-0.5"><Minus className="h-3 w-3" /></button>
                 <input type="number" min={1} value={l.qty} onChange={(e) => setQty(l.key, Number(e.target.value))} className="w-11 rounded border bg-background px-1 text-center font-bold" />
                 <button type="button" aria-label="زيادة" onClick={() => setQty(l.key, l.qty + 1)} className="rounded bg-card p-0.5"><Plus className="h-3 w-3" /></button>
