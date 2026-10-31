@@ -21,4 +21,5 @@
 - [x] Restore catalog into the dashboard (45 items + 30 datasheet PDFs, kWh price 290)
 - [x] Connect n8n in the new workspace
 - [x] Datasheets + full data snapshot (data/) stored inside the project and loaded into the database
-- [x] Add-item form + auto-add rules (app quotes + bot)
+- [x] Connect n8n in the new workspace (linked: سفيان's n8n, gateway, 43 workflows visible)
+- [ ] Desktop/PWA opens fully offline: app shell + HTML served offline, and last-known data (customers, chats, orders, catalog) cached on the device
