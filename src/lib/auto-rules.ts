@@ -65,7 +65,7 @@ export function ruleMatches(r: AutoRule, c: QuoteCtx): boolean {
 }
 
 export function ruleQty(r: AutoRule, c: QuoteCtx): number {
-  if (r.qty_mode === "per_panels") return Math.max(1, Math.ceil(panelCount({ ...r, panel_keys: r.scope === "custom" ? r.panel_keys : [] }, c) / Math.max(1, r.per)));
+  if (r.qty_mode === "per_panels") return Math.max(1, Math.ceil(panelCount(r, c) / Math.max(1, r.per)));
   return Math.max(1, r.qty);
 }
 
