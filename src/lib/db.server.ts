@@ -1,6 +1,6 @@
 // Server-side data client for the ACTES dashboard and bot endpoints.
-// Reads the access key from ACTES_DB_SECRET_KEY (entered in the secure secret form),
-// falling back to SUPABASE_SERVICE_ROLE_KEY when a managed connection provides it.
+// Reads the access key from the project's managed backend settings
+// (SUPABASE_SERVICE_ROLE_KEY), falling back to ACTES_DB_SECRET_KEY if one is entered by hand.
 // Bypasses row-level security, so import it only inside server handlers.
 import { createClient } from "@supabase/supabase-js";
 import type { Database } from "@/integrations/supabase/types";
@@ -31,10 +31,10 @@ function createFetch(supabaseKey: string): typeof fetch {
 
 function createAdminClient() {
   const url = process.env["SUPABASE_URL"];
-  const key = process.env["ACTES_DB_SECRET_KEY"] || process.env["SUPABASE_SERVICE_ROLE_KEY"];
+  const key = process.env["SUPABASE_SERVICE_ROLE_KEY"] || process.env["ACTES_DB_SECRET_KEY"];
 
   if (!url || !key) {
-    const missing = [...(!url ? ["SUPABASE_URL"] : []), ...(!key ? ["ACTES_DB_SECRET_KEY"] : [])];
+    const missing = [...(!url ? ["SUPABASE_URL"] : []), ...(!key ? ["SUPABASE_SERVICE_ROLE_KEY"] : [])];
     const message = `Missing data access setting(s): ${missing.join(", ")}`;
     console.error(`[db] ${message}`);
     throw new Error(message);
