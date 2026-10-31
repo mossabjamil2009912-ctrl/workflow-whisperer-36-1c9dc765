@@ -56,6 +56,7 @@ export type Database = {
       catalog_items: {
         Row: {
           active: boolean
+          auto_rules: Json
           category: string
           category_title: string | null
           key: string
@@ -71,6 +72,7 @@ export type Database = {
         }
         Insert: {
           active?: boolean
+          auto_rules?: Json
           category?: string
           category_title?: string | null
           key: string
@@ -86,6 +88,7 @@ export type Database = {
         }
         Update: {
           active?: boolean
+          auto_rules?: Json
           category?: string
           category_title?: string | null
           key?: string
