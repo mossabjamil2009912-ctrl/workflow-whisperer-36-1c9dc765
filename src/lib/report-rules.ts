@@ -11,7 +11,7 @@ export function sendBlocker(req: { status: string }, file: { path: string } | nu
 type Spec = { kw: number; three: boolean; panels: number; bat: number };
 function parse(s: string): Spec {
   const t = s.replace(/[٠-٩]/g, (d) => String(d.charCodeAt(0) - 0x660));
-  const num = (re: RegExp) => { const m = t.match(re); return m ? parseFloat(m[1]) : 0; };
+  const num = (re: RegExp) => { const m = t.match(re); return m?.[1] ? parseFloat(m[1]) : 0; };
   return {
     kw: num(/(\d+(?:\.\d+)?)\s*كيلو(?!\s*\))/),
     three: /3\s*فاز|ثلاث/.test(t),
