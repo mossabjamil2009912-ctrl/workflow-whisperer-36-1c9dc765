@@ -468,6 +468,22 @@ export const openPresetReport = createServerFn({ method: "POST" })
 
 async function requestFile(supabaseAdmin: any, rq: { id: string; name: string | null; city?: string | null; lat?: number | null; lon?: number | null; tilt?: number | null; azimuth?: string | null; file_path: string | null; file_name: string | null; kind: string; system_label: string | null }) {
   if (rq.file_path) return { path: rq.file_path, file_name: rq.file_name ?? "report.pdf" };
+  if (rq.kind === "sld") {
+    // Draw the single-line diagram for this customer's own system and keep it with the request.
+    const { parseSystem } = await import("@/lib/pvsyst-calc");
+    const spec = parseSystem(rq.system_label);
+    if (spec) {
+      const { buildSld } = await import("@/lib/sld-pdf");
+      const name = (rq.name ?? "").trim() || "Customer";
+      const bin = await buildSld(name, spec);
+      const path = `reports/requests/${rq.id}/${crypto.randomUUID()}.pdf`;
+      const file_name = `${name.replace(/[\\/:*?"<>|]/g, "")}_SLD.pdf`;
+      const up = await supabaseAdmin.storage.from("crm-attachments").upload(path, bin, { contentType: "application/pdf" });
+      if (up.error) throw new Error("تعذّر حفظ المخطط");
+      await supabaseAdmin.from("report_requests").update({ file_path: path, file_name }).eq("id", rq.id);
+      return { path, file_name };
+    }
+  }
   if (rq.kind === "pvsyst") {
     // Build the simulation report for this customer's own system and keep it with the request.
     const { parseSystem } = await import("@/lib/pvsyst-calc");
