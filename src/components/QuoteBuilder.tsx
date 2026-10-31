@@ -534,7 +534,7 @@ export function QuoteBuilder({ pw, initialCustomerId }: { pw: string; initialCus
     setLines(Object.fromEntries(full.map((l) => [l.key, l])));
     setShowHist(false);
     void generate(full);
-  };
+  }
   const loadQuote = (qt: (typeof quotes)[number]) => {
     // Saved quotes keep their items as they were: auto lines become ordinary lines.
     const its = ((qt.items as unknown as Line[]) ?? []).map((l) => ({ ...l, auto: false }));
