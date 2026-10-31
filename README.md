@@ -26,7 +26,6 @@ https://n8n.srv1994780.hstgr.cloud/workflow/twQV31OWjucubtx2
 
 
 
-eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiI2MjFiMjI2My1lNjhmLTQ4YzYtOTk0OC0xM2EzYjRhZGFjODciLCJpc3MiOiJuOG4iLCJhdWQiOiJwdWJsaWMtYXBpIiwianRpIjoiNmU4MzNmZDctODY5MC00MTQ2LWJmODYtODVmMDdkZWZkMjcxIiwiaWF0IjoxNzkxMzA2NDA3fQ.Wear13lnEYjhASEroAOWmNyD0DuvjpH5xQo__m9p-ms
 
 This project was built with [Lovable](https://lovable.dev).
 
