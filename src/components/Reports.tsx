@@ -108,7 +108,7 @@ export function Reports({ pw }: { pw: string }) {
         <ul className="flex-1 space-y-2 overflow-y-auto px-3 pb-3">
           {shown.map((r) => {
             const sel = matchPreset(r.system_label, files.filter((f) => f.kind === r.kind).map((f) => f.preset_title));
-            const auto = r.kind === "pvsyst" && !!parseSystem(r.system_label);
+            const auto = !!parseSystem(r.system_label);
             const ready = !!r.file_path || !!sel || auto;
             return (
               <li key={r.id} className="rounded-xl border border-border bg-card p-3 text-sm shadow-sm">
