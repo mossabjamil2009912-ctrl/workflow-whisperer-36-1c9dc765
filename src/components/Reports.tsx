@@ -3,6 +3,7 @@ import { useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { Eye, Send, Phone, Upload, Check } from "lucide-react";
 import { listReportRequests, uploadPresetReport, openPresetReport, sendReportRequest, uploadRequestReport, openRequestReport } from "@/lib/crm.functions";
+import { offlineQuery } from "@/lib/offline-cache";
 import { BOT_PRESETS } from "@/lib/bot-presets";
 import { matchPreset } from "@/lib/report-rules";
 import { REPORT_LABEL, type ReportKind } from "@/lib/report-rules";
@@ -11,7 +12,7 @@ const TITLES = BOT_PRESETS.map((p) => p.title);
 
 export function useReports(pw: string) {
   const list = useServerFn(listReportRequests);
-  return useQuery({ queryKey: ["reports"], queryFn: () => list({ data: { pw } }), refetchInterval: 30000 });
+  return useQuery(offlineQuery({ queryKey: ["reports"], queryFn: () => list({ data: { pw } }), refetchInterval: 30000 }));
 }
 
 function toB64(f: File) {

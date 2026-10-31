@@ -3,6 +3,7 @@ import { useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { Search, FileText, Save, Pencil, X, Plus, Trash2, ChevronLeft, Zap } from "lucide-react";
 import { listCatalog, saveCatalogItem, createCatalogItem, deleteCatalogItem } from "@/lib/crm.functions";
+import { offlineQuery } from "@/lib/offline-cache";
 import { AutoRulesDialog } from "@/components/AutoRulesDialog";
 import { rulesOf, type CatItem } from "@/lib/auto-rules";
 
@@ -60,7 +61,7 @@ function Folder({ title, count, open, onToggle, level, children }: { title: stri
 export function Catalog({ pw }: { pw: string }) {
   const list = useServerFn(listCatalog);
   const del = useServerFn(deleteCatalogItem);
-  const { data: rows = [], refetch } = useQuery({ queryKey: ["catalog"], queryFn: () => list({ data: { pw } }) });
+  const { data: rows = [], refetch } = useQuery(offlineQuery({ queryKey: ["catalog"], queryFn: () => list({ data: { pw } }) }));
   const onDelete = async (r: Row) => {
     if (!window.confirm(`حذف "${r.name}" نهائياً؟`)) return;
     try { await del({ data: { pw, key: r.key } }); await refetch(); } catch (e) { alert((e as Error).message); }

@@ -3,6 +3,7 @@ import { PersistQueryClientProvider } from "@tanstack/react-query-persist-client
 import { createAsyncStoragePersister } from "@tanstack/query-async-storage-persister";
 import { get as idbGet, set as idbSet, del as idbDel } from "idb-keyval";
 import { registerOfflineWorker } from "../lib/pwa";
+import { saveShell } from "../lib/offline-shell";
 import {
   Outlet,
   Link,
@@ -133,7 +134,13 @@ const persister = createAsyncStoragePersister({
 
 function RootComponent() {
   const { queryClient } = Route.useRouteContext();
-  useEffect(() => { void registerOfflineWorker(); }, []);
+  useEffect(() => {
+    void registerOfflineWorker();
+    void saveShell();
+    const onOnline = () => void saveShell();
+    window.addEventListener("online", onOnline);
+    return () => window.removeEventListener("online", onOnline);
+  }, []);
 
   return (
     <PersistQueryClientProvider client={queryClient} persistOptions={{ persister, maxAge: 30 * 24 * 60 * 60_000, buster: "v1" }}>

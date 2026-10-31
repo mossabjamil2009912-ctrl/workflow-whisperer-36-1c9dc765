@@ -27,8 +27,9 @@ function playChime() {
   } catch { /* ignore */ }
 }
 import { STAGES, type Stage } from "@/lib/crm-data";
-import { listCustomers, getMessages, sendMessage, sendAttachment, saveNote, setBotPaused } from "@/lib/crm.functions";
+import { listCustomers, getMessages, sendMessage, sendAttachment, saveNote, setBotPaused, listCatalog, listOrders, listTickets, listReportRequests, listQuotes, getKwhPrice } from "@/lib/crm.functions";
 import { enqueue, flush, isNetworkError, usePending } from "@/lib/outbox";
+import { offlineQuery, snapshotTime } from "@/lib/offline-cache";
 import { Paperclip, X } from "lucide-react";
 import { Orders, useOrders } from "@/components/Orders";
 import { Tickets, useTickets } from "@/components/Tickets";
@@ -148,11 +149,11 @@ function Login({ onOk }: { onOk: (p: string) => void }) {
 
 function Dashboard({ pw, onLogout }: { pw: string; onLogout: () => void }) {
   const list = useServerFn(listCustomers);
-  const { data: customers = [], isLoading } = useQuery({
+  const { data: customers = [], isLoading } = useQuery(offlineQuery({
     queryKey: ["customers"],
     queryFn: () => list({ data: { pw } }),
     refetchInterval: 20000,
-  });
+  }));
   // حفظ كل المحادثات على الجهاز للعمل دون إنترنت
   const qcAll = useQueryClient();
   const getAll = useServerFn(getMessages);
@@ -163,16 +164,33 @@ function Dashboard({ pw, onLogout }: { pw: string; onLogout: () => void }) {
     return () => { window.removeEventListener("online", u); window.removeEventListener("offline", u); };
   }, []);
   const synced = useRef(false);
+  const [savedAt, setSavedAt] = useState<number | null>(null);
+  const listCat = useServerFn(listCatalog), listOrd = useServerFn(listOrders), listTic = useServerFn(listTickets);
+  const listRep = useServerFn(listReportRequests), listQ = useServerFn(listQuotes), getKwh = useServerFn(getKwhPrice);
+  // تنزيل نسخة كاملة على الجهاز: كل الشاشات وكل المحادثات — حتى يفتح التطبيق دون إنترنت
   useEffect(() => {
     if (!online || synced.current || customers.length === 0) return;
     synced.current = true;
     (async () => {
+      const screens = [
+        async () => { await qcAll.prefetchQuery(offlineQuery({ queryKey: ["catalog"], queryFn: () => listCat({ data: { pw } }) })); },
+        async () => { await qcAll.prefetchQuery(offlineQuery({ queryKey: ["orders"], queryFn: () => listOrd({ data: { pw } }) })); },
+        async () => { await qcAll.prefetchQuery(offlineQuery({ queryKey: ["tickets"], queryFn: () => listTic({ data: { pw } }) })); },
+        async () => { await qcAll.prefetchQuery(offlineQuery({ queryKey: ["reports"], queryFn: () => listRep({ data: { pw } }) })); },
+        async () => { await qcAll.prefetchQuery(offlineQuery({ queryKey: ["quotes"], queryFn: () => listQ({ data: { pw } }) })); },
+        async () => { await qcAll.prefetchQuery(offlineQuery({ queryKey: ["kwh_price"], queryFn: () => getKwh({ data: { pw } }) })); },
+      ];
+      for (const s of screens) {
+        if (!navigator.onLine) break;
+        await s().catch(() => {});
+      }
       for (const c of customers) {
         if (!navigator.onLine) break;
-        await qcAll.prefetchQuery({ queryKey: ["messages", c.id], queryFn: () => getAll({ data: { pw, id: c.id } }), staleTime: 60_000 }).catch(() => {});
+        await qcAll.prefetchQuery(offlineQuery({ queryKey: ["messages", c.id], queryFn: () => getAll({ data: { pw, id: c.id } }), staleTime: 60_000 })).catch(() => {});
       }
+      void snapshotTime(["customers"]).then(setSavedAt);
     })();
-  }, [online, customers, qcAll, getAll, pw]);
+  }, [online, customers, qcAll, getAll, pw, listCat, listOrd, listTic, listRep, listQ, getKwh]);
   // إرسال الرسائل المعلّقة تلقائياً عند عودة الاتصال
   const sendQueued = useServerFn(sendMessage);
   const pendingAll = usePending();
@@ -263,7 +281,7 @@ function Dashboard({ pw, onLogout }: { pw: string; onLogout: () => void }) {
     <div dir="rtl" className="flex min-h-screen flex-col bg-background text-foreground lg:h-screen lg:overflow-hidden">
       {!online && (
         <div className="bg-accent px-3 py-1 text-center text-xs font-semibold text-accent-foreground">
-          أنت دون إنترنت — تعرض المحادثات والأصناف المحفوظة على الجهاز، وتتحدث تلقائياً عند عودة الاتصال
+          أنت دون إنترنت — {savedAt ? `تعرض آخر نسخة محفوظة على الجهاز من {new Date(savedAt).toLocaleString("ar", { dateStyle: "short", timeStyle: "short" })}` : "لم تُحفظ نسخة على الجهاز بعد — افتح التطبيق مرة واحدة والإنترنت شغّال"}، وتتحدث تلقائياُ عند عودة الاتصال
         </div>
       )}
       <header className="relative overflow-hidden bg-ink px-4 py-3 text-ink-foreground md:px-8 lg:py-1">
@@ -495,12 +513,12 @@ function Chat({ pw, c, onBack, onInfo }: { pw: string; c: Cust; onBack: () => vo
   const [sending, setSending] = useState(false);
   const [err, setErr] = useState("");
   const pending = usePending(c.id);
-  const { data: msgs = [], refetch } = useQuery({
+  const { data: msgs = [], refetch } = useQuery(offlineQuery({
     queryKey: ["messages", c.id],
     queryFn: () => get({ data: { pw, id: c.id } }),
     refetchInterval: 10000,
     staleTime: 5000,
-  });
+  }));
   const end = useRef<HTMLDivElement>(null);
   const box = useRef<HTMLDivElement>(null);
   const lastId = msgs.length ? msgs[msgs.length - 1]!.id : null;

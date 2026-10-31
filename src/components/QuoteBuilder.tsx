@@ -4,6 +4,7 @@ import { useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { Search, FilePlus2, Save, Minus, Plus, Trash2, Check, Zap, Battery, Sun, Box, ShieldCheck, Server, Home, Cpu, Cable, Wrench, Printer, History, Share2, X, Download } from "lucide-react";
 import { listCatalog, listCustomers, saveQuote, listQuotes, sendAttachment, ensureCustomerByPhone, uploadQuotePdf, getKwhPrice, setKwhPrice } from "@/lib/crm.functions";
+import { offlineQuery } from "@/lib/offline-cache";
 import { BOT_PRESETS } from "@/lib/bot-presets";
 import logoClean from "@/assets/actes-logo-clean.png";
 
@@ -332,9 +333,9 @@ async function quotePdfBase64(no: string, cust: { name: string; phone: string; c
 export function QuoteBuilder({ pw, initialCustomerId }: { pw: string; initialCustomerId?: string | null }) {
   const listC = useServerFn(listCatalog), listCu = useServerFn(listCustomers), save = useServerFn(saveQuote), sendA = useServerFn(sendAttachment), listQ = useServerFn(listQuotes), ensureC = useServerFn(ensureCustomerByPhone), upPdf = useServerFn(uploadQuotePdf);
   const [sharePhone, setSharePhone] = useState("");
-  const { data: rows = [] } = useQuery({ queryKey: ["catalog"], queryFn: () => listC({ data: { pw } }) });
-  const { data: customers = [], refetch: refetchCu } = useQuery({ queryKey: ["quote-customers"], queryFn: () => listCu({ data: { pw } }) });
-  const { data: quotes = [], refetch: refetchQ } = useQuery({ queryKey: ["quotes"], queryFn: () => listQ({ data: { pw } }) });
+  const { data: rows = [] } = useQuery(offlineQuery({ queryKey: ["catalog"], queryFn: () => listC({ data: { pw } }) }));
+  const { data: customers = [], refetch: refetchCu } = useQuery(offlineQuery({ queryKey: ["quote-customers"], queryFn: () => listCu({ data: { pw } }) }));
+  const { data: quotes = [], refetch: refetchQ } = useQuery(offlineQuery({ queryKey: ["quotes"], queryFn: () => listQ({ data: { pw } }) }));
 
   const [active, setActive] = useState("inverters");
   const [q, setQ] = useState("");
@@ -355,7 +356,7 @@ export function QuoteBuilder({ pw, initialCustomerId }: { pw: string; initialCus
   const [invKw, setInvKw] = useState<InvChoice | null>(null);
   const getKwh = useServerFn(getKwhPrice);
   const saveKwh = useServerFn(setKwhPrice);
-  const { data: kwhData, refetch: refetchKwh } = useQuery({ queryKey: ["kwh_price"], queryFn: () => getKwh({ data: { pw } }) });
+  const { data: kwhData, refetch: refetchKwh } = useQuery(offlineQuery({ queryKey: ["kwh_price"], queryFn: () => getKwh({ data: { pw } }) }));
   const kwhPrice = kwhData?.kwh_price ?? DEFAULT_KWH_PRICE;
   const [kwhEdit, setKwhEdit] = useState<string | null>(null);
   const saveKwhPrice = async () => {
