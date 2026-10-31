@@ -337,6 +337,51 @@ export const saveCatalogItem = createServerFn({ method: "POST" })
     return { ok: true };
   });
 
+export const createCatalogItem = createServerFn({ method: "POST" })
+  .inputValidator((d) => z.object({
+    pw: z.string(),
+    name: z.string().trim().min(1).max(500),
+    price: z.number().nonnegative(),
+    unit: z.string().trim().max(50).nullable(),
+    category: z.string().trim().min(1).max(50),
+    category_title: z.string().max(100).nullable(),
+    specs: z.array(z.string().max(1000)).max(200),
+  }).parse(d))
+  .handler(async ({ data }) => {
+    check(data.pw);
+    const { supabaseAdmin } = await import("@/lib/db.server");
+    const { data: last } = await supabaseAdmin.from("catalog_items").select("sort").order("sort", { ascending: false }).limit(1).maybeSingle();
+    const key = "ITEM_" + Date.now().toString(36).toUpperCase();
+    const { pw: _pw, ...rest } = data;
+    const { error } = await supabaseAdmin.from("catalog_items").insert({ ...rest, key, kind: "item", active: true, sort: (last?.sort ?? 0) + 1 });
+    if (error) throw new Error(error.message);
+    return { key };
+  });
+
+const ruleSchema = z.object({
+  scope: z.enum(["all", "res", "com", "custom"]),
+  type: z.enum(["all", "res", "com"]),
+  match: z.enum(["all", "any"]),
+  inv_kw: z.array(z.number()).max(50),
+  bat_kwh: z.array(z.number()).max(50),
+  panel_keys: z.array(z.string().max(100)).max(20),
+  panels_min: z.number().int().nonnegative().nullable(),
+  panels_max: z.number().int().nonnegative().nullable(),
+  qty_mode: z.enum(["fixed", "per_panels"]),
+  qty: z.number().int().min(1).max(10000),
+  per: z.number().int().min(1).max(10000),
+});
+
+export const saveAutoRules = createServerFn({ method: "POST" })
+  .inputValidator((d) => z.object({ pw: z.string(), key: z.string().min(1).max(100), rules: z.array(ruleSchema).max(20) }).parse(d))
+  .handler(async ({ data }) => {
+    check(data.pw);
+    const { supabaseAdmin } = await import("@/lib/db.server");
+    const { error } = await supabaseAdmin.from("catalog_items").update({ auto_rules: data.rules, updated_at: new Date().toISOString() }).eq("key", data.key);
+    if (error) throw new Error(error.message);
+    return { ok: true };
+  });
+
 export const saveQuote = createServerFn({ method: "POST" })
   .inputValidator((d) => z.object({
     pw: z.string(),
