@@ -104,7 +104,7 @@ export async function buildSld(name: string, spec: SystemSpec, when = new Date()
   const bus = ix + 120;
   line(c, bx + 152, by + 25, bus, by + 25, DC, 1.4); line(c, bus, iy + ih, bus, by + 25, DC, 1.4);
   dot(c, bus, iy + ih, DC); dot(c, bus, by + 25, DC);
-  t(c, "BAT", bus + 6, 240, 6.5, DC); t(c, "W3", bus + 16, 268, 7, DC, true);
+  t(c, "BAT", bus - 22, 240, 6.5, DC); t(c, "W3", bus - 22, 268, 7, DC, true);
   t(c, `DC ${d.batBreaker} A 2P — 10 kA  ·  ${d.batMm2} mm²`, 390, by + 42, 6.5, MUTED);
   badge(c, 450, by + 58, d.drops.bat, 1.5);
 
@@ -119,7 +119,7 @@ export async function buildSld(name: string, spec: SystemSpec, when = new Date()
   // EPS
   const ey = 220;
   line(c, ix + iw, 178, 630, 178, AC, 1.2); line(c, 630, 178, 630, ey + 20, AC, 1.2); line(c, 630, ey + 20, ax, ey + 20, AC, 1.2);
-  t(c, "EPS / BACKUP", 636, 196, 6, AC); t(c, "COMM", bus + 30, 200, 6, COM);
+  t(c, "EPS / BACKUP", 636, 196, 6, AC); t(c, "COMM", bus + 28, 230, 6, COM);
   box(c, ax, ey, aw, 40, "EPS OUTPUT BOARD", [`MCB ${d.acBreaker} A + RCD 30 mA`, "AC SPD Type 2"], AC);
   badge(c, 636, ey + 26, d.drops.eps, 1.5);
   // W5 -> meter -> grid
