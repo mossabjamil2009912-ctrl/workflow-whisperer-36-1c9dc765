@@ -1,0 +1,1 @@
+ALTER TABLE public.catalog_items ADD COLUMN IF NOT EXISTS auto_rules jsonb NOT NULL DEFAULT '[]'::jsonb;
