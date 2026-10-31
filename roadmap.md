@@ -19,3 +19,5 @@
 - [x] Restore bot password secret (BOT_INGEST_SECRET) — needs publish to take effect
 - [x] Fix duplicate bot replies — guard live: same message accepted once, second copy rejected
 - [x] Restore catalog into the dashboard (45 items + 30 datasheet PDFs, kWh price 290)
+- [ ] Connect n8n in the new workspace
+- [x] Datasheets + full catalog stored inside the project
