@@ -2,6 +2,21 @@ import { createFileRoute } from "@tanstack/react-router";
 import { timingSafeEqual } from "crypto";
 import seed from "@/lib/catalog-seed.json";
 
+type SeedRow = {
+  key: string;
+  kind?: string;
+  category?: string;
+  category_title?: string | null;
+  name: string;
+  unit?: string | null;
+  price?: number | null;
+  label?: string | null;
+  pdf_url?: string | null;
+  specs?: string[];
+  active?: boolean;
+  sort?: number;
+};
+
 // One-time loader: fills public.catalog_items from the staged product list, then this route and the JSON are removed.
 export const Route = createFileRoute("/api/public/catalog-seed")({
   server: {
@@ -13,7 +28,7 @@ export const Route = createFileRoute("/api/public/catalog-seed")({
           return new Response("Unauthorized", { status: 401 });
         }
         const { supabaseAdmin } = await import("@/lib/db.server");
-        const rows = seed as Array<Record<string, unknown>>;
+        const rows = seed as SeedRow[];
         let ok = 0;
         let fail = 0;
         for (const r of rows) {
